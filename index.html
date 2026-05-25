@@ -168,6 +168,7 @@ const TC={'互動文':'#2b6cb0','衛教+活動':'#276749','衛教+促購':'#9240
   '衛教文(好菌知識)':'#6b7280','公告':'#6b7280','實體活動':'#6b7280','LINE限定':'#5b21b6'};
 const tc=t=>TC[t]||'#6b7280';
 const gAvgO=D.avg_open_all, gAvgC=D.avg_click_all;
+const INSIGHTS={"202507": {"pros": ["開封率 31.54%、點擊率 4.96%，雙雙超過整體基準", "互動文類型開封率 55.2%、點擊率 15.01%，遠超其他類型，讀者不僅開信更願意深度互動", "情人節文案對活躍客點擊率達 30%，限時節慶話題有效驅動行動意願", "衛教+活動類型點擊率達 10.46%，健康話題搭配活動誘因效果佳"], "cons": ["「垃圾食物日」其他分眾版本開封率僅 20.2%，且點擊率僅 2.1%，話題與分眾不匹配", "衛教+促購類型開封率 26.47%，為全月最低，單純促購訊息對未購分眾吸引力弱", "淺眠客點擊率僅 3.28%，低於基準，對促購內容反應冷淡", "沉睡客與淺眠客開封率偏低（32~34%），進一步壓縮點擊機會"], "suggest": "互動文搭配節慶話題是本月最強組合，建議複製到其他月份。針對淺眠客與沉睡客，促購內容難以引發點擊，應改用話題型文案先建立連結，再導入購買誘因。"}, "202508": {"pros": ["開封率 32.07%、點擊率 4.47%，持續高於整體基準", "會員日推播點擊率達 8.67%，會員專屬感有效驅動行動", "限時優惠（父親節加碼）點擊率 6.82%，截止感文案刺激點擊意願強", "高齡博覽會衛教內容開封率 55.7%，特定族群精準話題效果顯著"], "cons": ["全會員分眾開封率僅 20.23%，點擊率僅 1.27%，廣播型推播雙指標俱低", "檔期活動類型開封率僅 23.56%，點擊率亦偏低（2.93%），活動開跑文案缺乏誘因", "節慶祝賀類型點擊率僅 2.97%，開封後缺乏行動動機", "品牌類型點擊率 2.6%，讀者開信後未進一步互動"], "suggest": "會員日與限時優惠的點擊率最高，代表這群用戶對專屬優惠敏感；建議加強會員專屬感設計。全會員廣播型推播雙指標持續偏低，應評估縮小受眾或提升個人化程度。"}, "202509": {"pros": ["衛教+活動類型點擊率達 5.26%，互動文 4.06%，在全月低迷中仍相對突出", "消化道年齡測驗互動文點擊率 6.72%，測驗型互動形式強烈驅動讀者參與", "特定名單開封率達 46.62%、點擊率 5.23%，精準受眾仍維持高互動"], "cons": ["整體開封率 25.04%、點擊率 2.55%，為全年最低月份，雙指標全面下滑", "好益思期間限定活動推播開封率 21~22%、點擊率 1.25%，直接型促購文案效果極差", "品牌類型點擊率僅 1.19%，讀者對純品牌內容互動意願低", "公告類型點擊率 1.25%，資訊型推播幾乎沒有驅動行動的效果"], "suggest": "9月點擊率全年最低的主因是大量促購與公告類型推播稀釋了整體成效。互動測驗型內容（消化道年齡測驗）點擊率高達 6.72%，顯示「讓讀者參與」比「直接告知」更能帶動深度互動，建議增加此類型。"}, "202510": {"pros": ["會員日推播點擊率達 4.33%，今年有互動分眾會員日點擊率高達 5.64%", "品牌+促購類型點擊率 2.98%，在低迷月份中相對穩定", "品牌話題（世界心理健康日、恩加獲獎）開封率近 39%，讀者對有深度的內容有興趣"], "cons": ["整體開封率 26.24%、點擊率 2.37%，為全年次低，雙指標均低於基準", "互動文類型點擊率僅 2.0%，本月互動文效果異常偏低", "檔期活動點擊率僅 1.97%，活動吸引力不足", "快樂生活21天短影片系列點擊率持續低迷（1.0~1.51%）", "今年無互動的會員日版本開封率 19.73%，更遑論點擊"], "suggest": "10月點擊率全年最低，短影片與檔期活動類型的點擊率雙雙偏低，代表內容本身的行動誘因不足。建議在 CTA 設計上加入更清晰的利益點（如「限時折扣碼」），並停止對完全無互動的會員繼續推播促購內容。"}, "202511": {"pros": ["整體開封率 30.92%、點擊率 3.99%，雙雙重返基準以上", "雙11加碼文案點擊率高達 6.91~9.21%，限時加碼策略強烈刺激點擊意願", "促購（限時優惠）類型點擊率 5.07%、檔期活動 4.85%，全月最佳類型", "淺眠客點擊率達 6.9%、瞌睡客 5.43%，雙11優惠對眠系客群有效喚醒購買意願"], "cons": ["實體活動推播點擊率僅 1.98%，未能帶動線上行動", "馬大元線上課程推廣點擊率僅 0.8%，第三方活動推廣效果極差", "特定名單點擊率雖達 4.4%，但開封率僅 24.03%，潛在損失大", "註冊未購開封率 17.77%，大量受眾未能進入點擊環節"], "suggest": "雙11限時加碼對眠系客群的點擊率有明顯提升效果，代表這群人對明確的優惠誘因有反應，但日常推播時他們不太行動。建議在重要促購節點提前規劃針對眠系客群的專屬優惠版本。"}, "202512": {"pros": ["愛用者故事與分享類內容點擊率達 6.78~8.13%，真實用戶見證強力驅動讀者行動", "感恩祭促購開跑點擊率 7.02%，情感型活動文案效果佳", "互動文類型點擊率 5.72%，即使開封率偏低仍維持高點擊", "雙12針對沒買過的潛眠客點擊率 8.33%，精準分眾策略奏效"], "cons": ["整體開封率 27.89%、點擊率 3.44%，雙雙低於基準", "「愛用故事最後提醒」開封率 8.84% 為全期最低，過度催促造成疲勞", "短影片內容點擊率持續偏低（1.2~1.43%），視覺型內容未能帶動點擊", "品牌+促購類型點擊率僅 1.43%，促購疲勞明顯"], "suggest": "真實用戶見證（愛用者故事）的點擊率是本月亮點，代表讀者對真實體驗更有共鳴；建議固定加入這類內容。最後提醒類推播需控制頻率，過多催促會造成反效果。短影片需優化 CTA 設計，否則只是增加開封但無法帶動行動。"}, "202601": {"pros": ["整體開封率 35.51%、點擊率 4.67%，雙雙為全年最佳月份之一", "陪跑類型點擊率高達 16.68%，新客陪跑問卷點擊率更達 22.93%，行動導向文案極度有效", "會員福利類型點擊率 9.89%，高價值會員（尊爵、白金）點擊率達 13~19%", "動物方城市互動活動點擊率達 10.77%，遊戲化設計強力驅動互動"], "cons": ["安欣瑜醫師衛教影片（1/30）開封率 0%，疑似推播異常", "節慶祝賀類型點擊率僅 1.37%，除了開封，讀者幾乎沒有後續行動", "品牌類型點擊率 1.43%，內容型推播難以帶動點擊", "部分睡眠系客群點擊率 0%（動物方城市益菌寶版本）"], "suggest": "陪跑與遊戲化互動是本月最強點擊率驅動力，代表有明確行動目標的文案（填問卷、參與遊戲）比單純告知更有效。建議在每個月規劃至少一個具行動導向的互動型推播。"}, "202602": {"pros": ["過年加馬活動點擊率驚人（24~29%），個性化測驗與禮盒兌換強烈驅動行動", "檔期活動（過年活動）點擊率高達 21.7%，為全期最高類型點擊率", "促購（限時優惠）點擊率 9.83%，春節氛圍加強購買意願", "瞌睡客與淺眠客開封率創歷史新高（56~59%），蔡老師信任遊戲效應持續"], "cons": ["整體點擊率 3.46%，略低於基準，高開封率未完全轉化為點擊", "快睡客點擊率僅 0.88%、淺眠客 1.2%，蔡老師系列雖帶動開封，但點擊意願不高", "刮刮樂兌換提醒點擊率為 0%，單純權益提醒缺乏吸引力", "品牌+促購類型點擊率僅 0.5%，為全期最低類型點擊率之一"], "suggest": "過年個性化測驗活動創下全期最高點擊率，印證「個性化 + 互動 + 禮品誘因」的強效組合。蔡老師系列對眠系客群開封率高但點擊率偏低，需要在內文加入更清晰的 CTA 或購買誘因，才能將開封轉化為行動。"}, "202603": {"pros": ["整體開封率 40.76%（全年最高）、點擊率 4.61%，雙雙強勁超越基準", "陪跑類型點擊率 10.76%，兌換提醒點擊率更達 34.04%，行動導向文案有效", "免疫力食療系列點擊率達 18%，精準分眾（有過敏購買紀錄）話題引發強烈行動意願", "今年有互動-排有買點擊率 7.41%，有明確購買歷程的分眾轉換率高"], "cons": ["換季過敏系列對沉睡客點擊率 0%，話題雖對，但分眾轉換意願幾乎為零", "衛教+活動類型點擊率僅 1.9%，開封率雖高（66%）但點擊率極低，內容偏純衛教", "衛教文（好菌知識）點擊率 3.59%，接近基準但相對月份整體偏低", "淺眠客點擊率 3.41%，低於基準，換季話題未能驅動這個分眾行動"], "suggest": "3月最大發現：高開封率不等於高點擊率。「衛教+活動」開封率 66% 但點擊率僅 1.9%，代表讀者對健康話題有興趣但不一定有購買意願。建議在衛教內容後面加入更強的購買誘因（如限時折扣），才能把興趣轉化成行動。"}, "202604": {"pros": ["整體開封率 35.02%、點擊率 3.80%，雙超基準", "陪跑類型點擊率高達 16.92%，兒童節舊客陪跑設計精準", "會員日點擊率 10.38%，特別是針對進站未購與購物車提醒版本（11.8~15.87%），精準受眾效果驚人", "MGM 推薦機制點擊率 5.74%，口碑行銷有效吸引主動參與"], "cons": ["母親節開跑系列對沉睡客、淺眠客點擊率為 0%，過早啟動節慶活動導致疲乏", "衛教+促購類型點擊率僅 2.15%，為本月最低，促購效率下滑", "今年有互動-排有買點擊率偏低（數據未進入前三），轉換仍有提升空間", "沉睡客整體點擊率僅 1.33%，持續最難轉換"], "suggest": "本月點擊率最大亮點是「精準行為分眾」策略：針對購物車未結、進站未購等特定行為的推播，點擊率遠高於一般廣播型。建議全面強化行為分眾，對不同購買歷程的用戶設計客製化 CTA，而非統一推播。"}, "202605": {"pros": ["整體開封率 32.03%、點擊率 4.44%，雙雙超過整體基準", "促購（限時優惠）類型點擊率高達 15.18%，流失客專屬免運優惠點擊率 22.09%，個人化挽回文案極度有效", "MGM 推薦機制點擊率 12.12%，口碑互動持續發力", "母親節最後衝刺推播點擊率達 13.46%，截止感加購物金到期的雙重驅動力強"], "cons": ["沉睡客整體點擊率僅 2.45%，快睡客 2.81%、淺眠客 2.85%，眠系客群整體點擊率低於基準", "腸道發炎系列各分眾開封率（16~23%）與點擊率（2.3~3%）均低於整體基準，話題對眠系客群缺乏立即性共鳴", "更年期失眠系列針對非互動瞌睡/快睡客版本點擊率 0%，話題雖精準但這些分眾轉換障礙高", "衛教+活動類型點擊率 3.66%，略超基準但表現平淡"], "suggest": "5月最重要的發現是「挽回文案」的威力：流失客專屬免運優惠點擊率達 22.09%，遠高於一般推播。建議系統化規劃「行為觸發式」挽回推播，對不同流失時間的客群設計不同誘因強度，以點擊率驗證最有效的挽回策略。"}};
 
 /* ── avg line plugins ── */
 function plY(av){
@@ -314,7 +315,7 @@ D.monthly_overall.forEach(mo=>{
   mpCon.appendChild(el);
 });
 
-function renderDiag(ym){
+function renderDiag(ym){_diagST='';
   const mo=D.monthly_overall.find(x=>x.ym===ym);
   const det=D.monthly_detail[ym];
   const prev=MONTHS.indexOf(ym)-1>=0?D.monthly_overall[MONTHS.indexOf(ym)-1]:null;
@@ -345,26 +346,71 @@ function renderDiag(ym){
       <div style="position:relative;width:100%;height:${stH}px"><canvas id="dST"></canvas></div></div>
     <div class="box">
       <div class="box-title">本月所有推播明細 <span style="font-size:11px;color:#999;font-weight:400">共 ${det.articles.length} 筆</span></div>
-      <div class="ctrl"><select id="dArtSort" onchange="diagArtSort(this.value,'${ym}')">
-        <option value="open_rate">開封率 ↓</option>
-        <option value="click_rate">點擊率 ↓</option>
-        <option value="open_rate_asc">開封率 ↑（最差排前）</option>
-      </select></div>
+      <div class="ctrl">
+        <select id="dArtSort" onchange="diagArtSort(this.value,'${ym}')">
+          <option value="open_rate">開封率 ↓</option>
+          <option value="click_rate">點擊率 ↓</option>
+          <option value="open_rate_asc">開封率 ↑（最差排前）</option>
+        </select>
+        <select id="dArtST" onchange="diagArtSTFilter(this.value,'${ym}')">
+          <option value="">全部發送類型</option>
+          ${[...new Set(det.articles.map(r=>r.send_type))].sort().map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
       <div class="tbl-wrap" id="artTbl"></div>
+    </div>
+    <div class="box" id="insightBox" style="margin-top:0">
+      <div class="box-title" style="margin-bottom:14px">本月診斷摘要</div>
+      <div id="insightContent"></div>
     </div>`;
   mkSmallBar('dAud',det.by_aud.map(x=>x.audience),det.by_aud.map(x=>x.open),'rgba(43,108,176,0.8)',gAvgO);
   mkSmallBar('dTopic',det.by_topic.map(x=>x.topic),det.by_topic.map(x=>x.open),'rgba(39,103,73,0.8)',gAvgO);
   mkSmallBar('dST',det.by_st.map(x=>x.send_type),det.by_st.map(x=>x.open),'rgba(83,74,183,0.8)',gAvgO);
   window._diagYm=ym; diagArtSort('open_rate',ym);
 }
+function renderInsights(ym){
+  const el=document.getElementById('insightContent');
+  if(!el)return;
+  const ins=INSIGHTS[ym];
+  if(!ins){el.innerHTML='<p style="font-size:12px;color:var(--color-text-tertiary)">本月無診斷資料</p>';return;}
+  const prosHtml=ins.pros.map(p=>`
+    <div style="display:flex;gap:8px;margin-bottom:6px;align-items:flex-start">
+      <span style="color:#0F6E56;font-size:14px;flex-shrink:0;margin-top:1px">✓</span>
+      <span style="font-size:12px;color:var(--color-text-secondary);line-height:1.6">${p}</span>
+    </div>`).join('');
+  const consHtml=ins.cons.map(c=>`
+    <div style="display:flex;gap:8px;margin-bottom:6px;align-items:flex-start">
+      <span style="color:#c53030;font-size:14px;flex-shrink:0;margin-top:1px">✕</span>
+      <span style="font-size:12px;color:var(--color-text-secondary);line-height:1.6">${c}</span>
+    </div>`).join('');
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="background:#f0faf4;border:0.5px solid #9FE1CB;border-radius:var(--border-radius-md);padding:12px 14px">
+        <div style="font-size:12px;font-weight:500;color:#0F6E56;margin-bottom:8px">本月優點</div>
+        ${prosHtml}
+      </div>
+      <div style="background:#fff5f5;border:0.5px solid #F7C1C1;border-radius:var(--border-radius-md);padding:12px 14px">
+        <div style="font-size:12px;font-weight:500;color:#A32D2D;margin-bottom:8px">本月問題點</div>
+        ${consHtml}
+      </div>
+    </div>
+    <div style="background:#fffbf0;border:0.5px solid #FAC775;border-radius:var(--border-radius-md);padding:12px 14px">
+      <div style="font-size:12px;font-weight:500;color:#854F0B;margin-bottom:6px">建議方向</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.7">${ins.suggest}</div>
+    </div>`;
+}
+let _diagST='';
+function diagArtSTFilter(st,ym){_diagST=st;const sk=document.getElementById('dArtSort')?document.getElementById('dArtSort').value:'open_rate';diagArtSort(sk,ym);}
 function diagArtSort(sk,ym){
   const det=D.monthly_detail[ym];
   let arts=[...det.articles];
+  if(_diagST) arts=arts.filter(r=>r.send_type===_diagST);
   if(sk==='click_rate') arts.sort((a,b)=>(b.click_rate??-1)-(a.click_rate??-1));
   else if(sk==='open_rate_asc') arts.sort((a,b)=>a.open_rate-b.open_rate);
   else arts.sort((a,b)=>b.open_rate-a.open_rate);
   const maxO=Math.max(...arts.map(r=>r.open_rate))||1;
   const maxC=Math.max(...arts.map(r=>r.click_rate??0))||1;
+  renderInsights(ym);
   document.getElementById('artTbl').innerHTML=`<table>
     <thead><tr><th style="width:28px">#</th><th style="width:78px">日期</th>
       <th style="width:82px">發送類型</th><th>發送主題</th>
