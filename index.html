@@ -808,7 +808,8 @@ function drawDetail(){
     <!-- 篩選區 -->
     <div class="box">
       <div class="box-title">多選發送類型 <span style="font-size:11px;color:#999;font-weight:400">— 加權成效即時更新</span>
-        <button onclick="_selSTs=new Set();drawDetail()" style="margin-left:auto;padding:3px 10px;border:1px solid #ccc;border-radius:6px;font-size:11px;cursor:pointer;background:#fff">清除全選</button>
+        <button onclick="selectAllSTs()" style="margin-left:auto;padding:3px 10px;border:1px solid #2b6cb0;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#2b6cb0">全選</button>
+        <button onclick="_selSTs=new Set();drawDetail()" style="margin-left:6px;padding:3px 10px;border:1px solid #ccc;border-radius:6px;font-size:11px;cursor:pointer;background:#fff">清除</button>
       </div>
       <div class="st-checks" id="stChecks">${stChecksHtml}</div>
       ${_selSTs.size>0?(()=>{
@@ -858,7 +859,7 @@ function drawDetail(){
         <tbody>
         ${slice.map((r,i)=>{
           const rank=s+i+1,col=tc(r.send_type);
-          const stAvgO=r.st_avg_open,stAvgC=r.st_avg_click;
+          const stAvgO=_selSTs.size>0?selOpen_st:r.st_avg_open,stAvgC=_selSTs.size>0?selClick_st:r.st_avg_click;
           const bO=stAvgO!=null&&r.open_rate<stAvgO;
           const bC=stAvgC!=null&&r.click_rate!=null&&r.click_rate<stAvgC;
           const ow=((r.open_rate||0)/maxO*100).toFixed(0);
@@ -931,6 +932,12 @@ function renderInsights(ym){
     </div>`;
 }
 
+function selectAllSTs(){
+  const allSTs=[...new Set((D.aud_detail[_dAud]||[]).map(r=>r.send_type))];
+  _selSTs=new Set(allSTs);
+  _pg=1;
+  drawDetail();
+}
 function toggleST(st){
   if(_selSTs.has(st))_selSTs.delete(st);
   else _selSTs.add(st);
