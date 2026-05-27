@@ -160,7 +160,10 @@ td.tdw{white-space:normal;line-height:1.35}
 <!-- ③ 分眾趨勢 -->
 <div id="tr" class="pg">
   <div class="box" style="padding-bottom:12px">
-    <div class="box-title">選擇分眾 — 基準線為該分眾加權值</div>
+    <div class="box-title">選擇分眾 — 基準線為合併加權值
+      <button onclick="selectAllAuds('tr')" style="margin-left:auto;padding:3px 10px;border:1px solid #2b6cb0;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#2b6cb0">全選</button>
+      <button onclick="clearAllAuds('tr')" style="margin-left:6px;padding:3px 10px;border:1px solid #ccc;border-radius:6px;font-size:11px;cursor:pointer;background:#fff">清除</button>
+    </div>
     <div class="pills" id="trPills"></div>
   </div>
   <div id="trContent"><div class="empty">👆 點選分眾，查看趨勢</div></div>
@@ -169,7 +172,10 @@ td.tdw{white-space:normal;line-height:1.35}
 <!-- ④ 分眾明細 -->
 <div id="dt" class="pg">
   <div class="box" style="padding-bottom:12px">
-    <div class="box-title">選擇分眾</div>
+    <div class="box-title">選擇分眾
+      <button onclick="selectAllAuds('dt')" style="margin-left:auto;padding:3px 10px;border:1px solid #2b6cb0;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#2b6cb0">全選</button>
+      <button onclick="clearAllAuds('dt')" style="margin-left:6px;padding:3px 10px;border:1px solid #ccc;border-radius:6px;font-size:11px;cursor:pointer;background:#fff">清除</button>
+    </div>
     <div class="pills" id="dtPills"></div>
   </div>
   <div id="dtContent"><div class="empty">👆 點選分眾，查看推播明細</div></div>
@@ -523,42 +529,146 @@ function diagArtSort(sk,ym){
 }
 
 /* ══ PILLS ══ */
-function makePills(cid,onSel){
-  const c=document.getElementById(cid);
-  D.aud_summary.forEach(a=>{
-    const el=document.createElement('button');el.className='pill';
-    el.innerHTML=`${a.audience} <span style="opacity:.55;font-size:11px">${a.open}%</span>`;
-    el.onclick=()=>{c.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));el.classList.add('on');onSel(a.audience);};
+// 多選分眾 state
+let _trAuds = new Set();   // 分眾趨勢：選中的分眾
+let _dtAuds = new Set();   // 分眾明細：選中的分眾
+
+function makePills(cid, mode){
+  // mode: 'tr' (分眾趨勢) 或 'dt' (分眾明細)
+  const c = document.getElementById(cid);
+  c.innerHTML = '';
+  D.aud_summary.forEach(a => {
+    const el = document.createElement('button');
+    el.className = 'pill';
+    const audSet = mode === 'tr' ? _trAuds : _dtAuds;
+    if (audSet.has(a.audience)) el.classList.add('on');
+    el.innerHTML = `${a.audience} <span style="opacity:.55;font-size:11px">${a.open}%</span>`;
+    el.onclick = () => {
+      if (audSet.has(a.audience)) audSet.delete(a.audience);
+      else audSet.add(a.audience);
+      makePills(cid, mode);
+      if (mode === 'tr') renderTrend();
+      else renderDetail();
+    };
     c.appendChild(el);
   });
 }
-makePills('trPills',renderTrend);
-makePills('dtPills',renderDetail);
+
+function selectAllAuds(mode){
+  const audSet = mode === 'tr' ? _trAuds : _dtAuds;
+  D.aud_summary.forEach(a => audSet.add(a.audience));
+  makePills(mode === 'tr' ? 'trPills' : 'dtPills', mode);
+  if (mode === 'tr') renderTrend();
+  else renderDetail();
+}
+
+function clearAllAuds(mode){
+  if (mode === 'tr') _trAuds = new Set();
+  else _dtAuds = new Set();
+  makePills(mode === 'tr' ? 'trPills' : 'dtPills', mode);
+  if (mode === 'tr') renderTrend();
+  else renderDetail();
+}
+
+makePills('trPills', 'tr');
+makePills('dtPills', 'dt');
 
 /* ══ TREND ══ */
 let _aud='',_trML='open',_trTopic='',_trTopicM='open',_trST='',_trSTM='open';
 let _audAvgO=0,_audAvgC=0;
-function renderTrend(aud){
-  _aud=aud;_trML='open';_trTopic='';_trTopicM='open';_trST='';_trSTM='open';
-  const sm=D.aud_summary.find(a=>a.audience===aud)||{};
-  _audAvgO=sm.open;_audAvgC=sm.click;
-  buildTrendHTML(aud);
+function renderTrend(){
+  // 多選分眾：合併加權
+  const selAuds = [..._trAuds];
+  if (selAuds.length === 0){
+    document.getElementById('trContent').innerHTML = '<div class="empty">👆 點選分眾，查看趨勢</div>';
+    return;
+  }
+  _trML='open'; _trTopic=''; _trTopicM='open'; _trST=''; _trSTM='open';
+  // 計算合併分眾的加權值
+  const sumReach   = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.reach||0);},0);
+  const sumOpened  = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.opened||0);},0);
+  const sumClicks  = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.clicks||0);},0);
+  _audAvgO = sumReach  ? +(sumOpened/sumReach*100).toFixed(2)  : 0;
+  _audAvgC = sumOpened ? +(sumClicks/sumOpened*100).toFixed(2) : 0;
+  _aud = selAuds;  // 改存陣列
+  buildTrendHTML(selAuds);
 }
-function buildTrendHTML(aud){
-  const mon=D.aud_monthly[aud]||[],cnt=D.aud_monthly_count[aud]||[];
-  const sm=D.aud_summary.find(a=>a.audience===aud)||{};
-  const topics=Object.keys(D.aud_topic_monthly[aud]||{}).sort();
-  const sendtypes=Object.keys(D.aud_st_monthly[aud]||{}).sort();
-  _trTopic=topics[0]||'';_trST=sendtypes[0]||'';
-  document.getElementById('trContent').innerHTML=`
+function buildTrendHTML(audsArr){
+  // audsArr 是分眾陣列
+  const auds = Array.isArray(audsArr) ? audsArr : [audsArr];
+  const audLabel = auds.length === 1 ? auds[0] : `合併 ${auds.length} 個分眾`;
+
+  // 合併月份資料
+  const mon = MONTHS.map(ym => {
+    let reach=0, opened=0, clicks=0, orders=0, rev=0;
+    auds.forEach(aud => {
+      const pts = D.aud_monthly[aud] || [];
+      const pt = pts.find(p => p.ym === ym);
+      if (pt && pt.open !== null){
+        // 需要從 all_rows 重新統計
+      }
+    });
+    // 改從 all_rows 直接計算合併
+    const rows = D.all_rows.filter(r => r.ym === ym && auds.includes(r.audience));
+    if (rows.length === 0) return {ym, open: null, click: null, conv: null, orders: 0, revenue: 0};
+    const rch = rows.reduce((s,r)=>s+r.reach,0);
+    const opd = rows.reduce((s,r)=>s+r.opened,0);
+    const clk = rows.reduce((s,r)=>s+r.clicks,0);
+    const odr = rows.reduce((s,r)=>s+r.orders,0);
+    const rv  = rows.reduce((s,r)=>s+r.revenue,0);
+    return {
+      ym,
+      open:  rch  ? +(opd/rch*100).toFixed(2)  : null,
+      click: opd  ? +(clk/opd*100).toFixed(2)  : null,
+      conv:  clk  ? +(odr/clk*100).toFixed(2)  : 0,
+      orders: odr, revenue: rv,
+    };
+  });
+
+  // 合併月份篇數
+  const cnt = MONTHS.map(ym => {
+    const n = D.all_rows.filter(r => r.ym === ym && auds.includes(r.audience)).length;
+    return {ym, count: n};
+  });
+
+  // 合併彙總
+  const sumReach   = auds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.reach||0);},0);
+  const sumOpened  = auds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.opened||0);},0);
+  const sumClicks  = auds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.clicks||0);},0);
+  const sumOrders  = auds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.orders||0);},0);
+  const sumRev     = auds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.revenue||0);},0);
+  const sumN       = auds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.n||0);},0);
+  const sm = {
+    open:  sumReach  ? +(sumOpened/sumReach*100).toFixed(2)  : 0,
+    click: sumOpened ? +(sumClicks/sumOpened*100).toFixed(2) : 0,
+    reach: sumReach, opened: sumOpened, clicks: sumClicks,
+    orders: sumOrders, revenue: sumRev, n: sumN,
+    aov: sumOrders ? Math.round(sumRev/sumOrders) : 0,
+  };
+
+  // 合併品項清單
+  const topicSet = new Set();
+  auds.forEach(a => Object.keys(D.aud_topic_monthly[a]||{}).forEach(t => topicSet.add(t)));
+  const topics = [...topicSet].sort();
+
+  // 合併發送類型清單
+  const stSet = new Set();
+  auds.forEach(a => Object.keys(D.aud_st_monthly[a]||{}).forEach(st => stSet.add(st)));
+  const sendtypes = [...stSet].sort();
+
+  _trTopic = topics[0] || '';
+  _trST = sendtypes[0] || '';
+
+  document.getElementById('trContent').innerHTML = `
     <div class="cards">
-      <div class="card avg"><div class="lbl">${aud} 加權開封率</div><div class="val">${sm.open}%</div>
+      <div class="card avg"><div class="lbl">${audLabel} 加權開封率</div><div class="val">${sm.open}%</div>
         <div class="sub">開封 ${fmt(sm.opened)} / 受眾 ${fmt(sm.reach)}</div></div>
-      <div class="card avg"><div class="lbl">${aud} 加權開啟點擊率</div><div class="val">${sm.click}%</div>
+      <div class="card avg"><div class="lbl">${audLabel} 加權開啟點擊率</div><div class="val">${sm.click}%</div>
         <div class="sub">點擊 ${fmt(sm.clicks)}</div></div>
       <div class="card rev"><div class="lbl">累積營業額</div><div class="val">${fmtM(sm.revenue||0)}</div>
         <div class="sub">訂單 ${fmt(sm.orders||0)}　客單 ${fmt(sm.aov||0)}</div></div>
-      <div class="card"><div class="lbl">推播總筆數</div><div class="val">${sm.n}</div></div>
+      <div class="card"><div class="lbl">推播總筆數</div><div class="val">${sm.n}</div>
+        <div class="sub">分眾數 ${auds.length}</div></div>
     </div>
     <div class="box"><div class="box-title">每月發送篇數</div>
       <div style="position:relative;width:100%;height:180px"><canvas id="cCnt"></canvas></div></div>
@@ -571,7 +681,7 @@ function buildTrendHTML(aud){
         <button id="trLB4" onclick="trLS('revenue')">營業額</button>
       </div>
       <div style="position:relative;width:100%;height:240px"><canvas id="cT"></canvas></div>
-      <p class="note">黃色虛線 = 該分眾加權值</p></div>
+      <p class="note">黃色虛線 = 該分眾合併加權值</p></div>
     <div class="box">
       <div class="box-title">溝通品項 — 每月趨勢</div>
       <div class="chart-ctrl">
@@ -583,7 +693,7 @@ function buildTrendHTML(aud){
         </div>
         <label>選擇品項：</label>
         <select id="trTopicSel" onchange="trTopicChange(this.value)">
-          ${topics.map(t=>`<option value="${t}">${t}</option>`).join('')}
+          ${topics.map(t => `<option value="${t}">${t}</option>`).join('')}
         </select>
         <span class="avg-badge" id="trTopicAvgBadge">基準：${sm.open}%</span>
       </div>
@@ -600,73 +710,110 @@ function buildTrendHTML(aud){
         </div>
         <label>選擇類型：</label>
         <select id="trSTSel" onchange="trSTChange(this.value)">
-          ${sendtypes.map(t=>`<option value="${t}">${t}</option>`).join('')}
+          ${sendtypes.map(t => `<option value="${t}">${t}</option>`).join('')}
         </select>
         <span class="avg-badge" id="trSTAvgBadge">基準：${sm.open}%</span>
       </div>
       <div style="position:relative;width:100%;height:220px"><canvas id="cTrST"></canvas></div>
     </div>`;
-  mkCountBar('cCnt',cnt.map(c=>c.count));
-  mkLine('cT',mon.map(m=>m[_trML]),_trML,_trML==='open'?_audAvgO:_audAvgC);
-  drawTopicLine();drawSTLine();
+
+  // 儲存合併資料給後續 draw 函式用
+  _trMon = mon;
+  _trCnt = cnt;
+
+  mkCountBar('cCnt', cnt.map(c => c.count));
+  mkLine('cT', mon.map(m => m[_trML]), _trML, _trML==='open' ? _audAvgO : _audAvgC);
+  drawTopicLine();
+  drawSTLine();
 }
-function getTopicMonthly(aud,t,m){
-  if(m==='open'||m==='click'){
-    const tm=(D.aud_topic_monthly[aud]||{})[t]||{};
-    return MONTHS.map(y=>tm[y]?tm[y][m]:null);
-  }
-  // conv / revenue: calculate from aud_detail
-  const rows=(D.aud_detail[aud]||[]).filter(r=>r.topic===t);
-  return MONTHS.map(ym=>{
-    const g=rows.filter(r=>r.ym===ym);
-    if(!g.length)return null;
-    if(m==='revenue') return g.reduce((s,r)=>s+(r.revenue||0),0);
-    const cl=g.reduce((s,r)=>s+(r.clicks||0),0);
-    const od=g.reduce((s,r)=>s+(r.orders||0),0);
-    return cl?+(od/cl*100).toFixed(2):0;
+
+let _trMon = [], _trCnt = [];
+
+function getTopicMonthly(audsArr, t, m){
+  // audsArr 可能是陣列或單字串
+  const auds = Array.isArray(audsArr) ? audsArr : [audsArr];
+  // 全部走 all_rows 重新加權（最準確）
+  return MONTHS.map(ym => {
+    const g = D.all_rows.filter(r => r.ym === ym && r.topic === t && auds.includes(r.audience));
+    if (!g.length) return null;
+    if (m === 'revenue') return g.reduce((s,r) => s + (r.revenue||0), 0);
+    if (m === 'conv'){
+      const cl = g.reduce((s,r) => s + (r.clicks||0), 0);
+      const od = g.reduce((s,r) => s + (r.orders||0), 0);
+      return cl ? +(od/cl*100).toFixed(2) : 0;
+    }
+    if (m === 'open'){
+      const rc = g.reduce((s,r) => s + (r.reach||0), 0);
+      const op = g.reduce((s,r) => s + (r.opened||0), 0);
+      return rc ? +(op/rc*100).toFixed(2) : null;
+    }
+    if (m === 'click'){
+      const op = g.reduce((s,r) => s + (r.opened||0), 0);
+      const cl = g.reduce((s,r) => s + (r.clicks||0), 0);
+      return op ? +(cl/op*100).toFixed(2) : null;
+    }
   });
 }
-function getSTMonthly(aud,st,m){
-  if(m==='open'||m==='click'){
-    const sm2=(D.aud_st_monthly[aud]||{})[st]||{};
-    return MONTHS.map(y=>sm2[y]?sm2[y][m]:null);
-  }
-  const rows=(D.aud_detail[aud]||[]).filter(r=>r.send_type===st);
-  return MONTHS.map(ym=>{
-    const g=rows.filter(r=>r.ym===ym);
-    if(!g.length)return null;
-    if(m==='revenue') return g.reduce((s,r)=>s+(r.revenue||0),0);
-    const cl=g.reduce((s,r)=>s+(r.clicks||0),0);
-    const od=g.reduce((s,r)=>s+(r.orders||0),0);
-    return cl?+(od/cl*100).toFixed(2):0;
+function getSTMonthly(audsArr, st, m){
+  const auds = Array.isArray(audsArr) ? audsArr : [audsArr];
+  return MONTHS.map(ym => {
+    const g = D.all_rows.filter(r => r.ym === ym && r.send_type === st && auds.includes(r.audience));
+    if (!g.length) return null;
+    if (m === 'revenue') return g.reduce((s,r) => s + (r.revenue||0), 0);
+    if (m === 'conv'){
+      const cl = g.reduce((s,r) => s + (r.clicks||0), 0);
+      const od = g.reduce((s,r) => s + (r.orders||0), 0);
+      return cl ? +(od/cl*100).toFixed(2) : 0;
+    }
+    if (m === 'open'){
+      const rc = g.reduce((s,r) => s + (r.reach||0), 0);
+      const op = g.reduce((s,r) => s + (r.opened||0), 0);
+      return rc ? +(op/rc*100).toFixed(2) : null;
+    }
+    if (m === 'click'){
+      const op = g.reduce((s,r) => s + (r.opened||0), 0);
+      const cl = g.reduce((s,r) => s + (r.clicks||0), 0);
+      return op ? +(cl/op*100).toFixed(2) : null;
+    }
   });
 }
 function drawTopicLine(){
   if(!_trTopic)return;
-  const ta=(D.aud_topic_avg[_aud]||{})[_trTopic]||{};
-  const isRev=_trTopicM==='revenue', isConv=_trTopicM==='conv';
-  const av=_trTopicM==='open'?(ta.avg_open??_audAvgO):_trTopicM==='click'?(ta.avg_click??_audAvgC):null;
-  const lbl=_trTopicM==='open'?'開封':_trTopicM==='click'?'開啟點擊':_trTopicM==='conv'?'轉換':'營業額';
-  const b=document.getElementById('trTopicAvgBadge');
-  if(b)b.textContent=`基準：${_trTopic} ${lbl}${av!=null?' '+av+'%':''}`;
-  mkLine('cTrTopic',getTopicMonthly(_aud,_trTopic,_trTopicM),_trTopicM,av);
+  const auds = Array.isArray(_aud) ? _aud : [_aud];
+  // 合併基準（all_rows 重新加權）
+  const allG = D.all_rows.filter(r => r.topic === _trTopic && auds.includes(r.audience));
+  const totRch = allG.reduce((s,r)=>s+r.reach,0);
+  const totOpd = allG.reduce((s,r)=>s+r.opened,0);
+  const totClk = allG.reduce((s,r)=>s+r.clicks,0);
+  const baseOpen  = totRch ? +(totOpd/totRch*100).toFixed(2) : _audAvgO;
+  const baseClick = totOpd ? +(totClk/totOpd*100).toFixed(2) : _audAvgC;
+  const av = _trTopicM==='open' ? baseOpen : _trTopicM==='click' ? baseClick : null;
+  const lbl = _trTopicM==='open'?'開封':_trTopicM==='click'?'開啟點擊':_trTopicM==='conv'?'轉換':'營業額';
+  const b = document.getElementById('trTopicAvgBadge');
+  if(b) b.textContent = `基準：${_trTopic} ${lbl}${av!=null?' '+av+'%':''}`;
+  mkLine('cTrTopic', getTopicMonthly(auds, _trTopic, _trTopicM), _trTopicM, av);
 }
 function drawSTLine(){
   if(!_trST)return;
-  const sa=(D.aud_st_avg[_aud]||{})[_trST]||{};
-  const isRev=_trSTM==='revenue', isConv=_trSTM==='conv';
-  const av=_trSTM==='open'?(sa.avg_open??_audAvgO):_trSTM==='click'?(sa.avg_click??_audAvgC):null;
-  const lbl=_trSTM==='open'?'開封':_trSTM==='click'?'開啟點擊':_trSTM==='conv'?'轉換':'營業額';
-  const b=document.getElementById('trSTAvgBadge');
-  if(b)b.textContent=`基準：${_trST} ${lbl}${av!=null?' '+av+'%':''}`;
-  mkLine('cTrST',getSTMonthly(_aud,_trST,_trSTM),_trSTM,av);
+  const auds = Array.isArray(_aud) ? _aud : [_aud];
+  const allG = D.all_rows.filter(r => r.send_type === _trST && auds.includes(r.audience));
+  const totRch = allG.reduce((s,r)=>s+r.reach,0);
+  const totOpd = allG.reduce((s,r)=>s+r.opened,0);
+  const totClk = allG.reduce((s,r)=>s+r.clicks,0);
+  const baseOpen  = totRch ? +(totOpd/totRch*100).toFixed(2) : _audAvgO;
+  const baseClick = totOpd ? +(totClk/totOpd*100).toFixed(2) : _audAvgC;
+  const av = _trSTM==='open' ? baseOpen : _trSTM==='click' ? baseClick : null;
+  const lbl = _trSTM==='open'?'開封':_trSTM==='click'?'開啟點擊':_trSTM==='conv'?'轉換':'營業額';
+  const b = document.getElementById('trSTAvgBadge');
+  if(b) b.textContent = `基準：${_trST} ${lbl}${av!=null?' '+av+'%':''}`;
+  mkLine('cTrST', getSTMonthly(auds, _trST, _trSTM), _trSTM, av);
 }
 function trLS(m){
-  _trML=m;setTog(['trLB1','trLB2','trLB3','trLB4'],['open','click','conv','revenue'].indexOf(m));
-  const mon=D.aud_monthly[_aud]||[];
-  const av=m==='open'?_audAvgO:m==='click'?_audAvgC:null;
-  const b=document.getElementById('trAvgBadge');if(b)b.textContent=`基準：${m==='open'?'開封':m==='click'?'開啟點擊':m==='conv'?'轉換':'營業額'} ${av??'—'}${av!=null?'%':''}`;
-  mkLine('cT',mon.map(x=>x[m]),m,av);
+  _trML=m; setTog(['trLB1','trLB2','trLB3','trLB4'],['open','click','conv','revenue'].indexOf(m));
+  const av = m==='open' ? _audAvgO : m==='click' ? _audAvgC : null;
+  const b = document.getElementById('trAvgBadge');
+  if(b) b.textContent = `基準：${m==='open'?'開封':m==='click'?'開啟點擊':m==='conv'?'轉換':'營業額'} ${av??'—'}${av!=null?'%':''}`;
+  mkLine('cT', _trMon.map(x => x[m]), m, av);
 }
 function trTopicChange(v){_trTopic=v;drawTopicLine();}
 function trSTChange(v){_trST=v;drawSTLine();}
@@ -675,200 +822,245 @@ function trSTS(m){_trSTM=m;setTog(['trSB1','trSB2','trSB3','trSB4'],['open','cli
 
 /* ══ DETAIL（多選發送類型）══ */
 let _dAud='',_pg=1,_sort='open_rate',_q='',_dTopic='',_selSTs=new Set();
-function renderDetail(aud){
-  _dAud=aud;_pg=1;_q='';_dTopic='';_selSTs=new Set();
+function renderDetail(){
+  _pg=1;_q='';_dTopic='';_selSTs=new Set();
   drawDetail();
 }
 function drawDetail(){
-  const raw=D.aud_detail[_dAud]||[];
-  const sm=D.aud_summary.find(a=>a.audience===_dAud)||{};
-  const stCross=D.aud_st_cross[_dAud]||{};
-  const allSTs=[...new Set(raw.map(r=>r.send_type))].sort();
-  const topics=[...new Set(raw.map(r=>r.topic))].sort();
+  // 多選分眾：合併所有選中分眾的明細
+  const selAuds = [..._dtAuds];
+  if (selAuds.length === 0){
+    document.getElementById('dtContent').innerHTML = '<div class="empty">👆 點選分眾，查看推播明細</div>';
+    return;
+  }
 
-  // filter
-  let rows=raw.filter(r=>{
-    const okQ=!_q||r.subject.toLowerCase().includes(_q)||r.topic.toLowerCase().includes(_q);
-    const okT=!_dTopic||r.topic===_dTopic;
-    const okST=_selSTs.size===0||_selSTs.has(r.send_type);
-    return okQ&&okT&&okST;
+  // 合併所有選中分眾的 aud_detail rows
+  let raw = [];
+  selAuds.forEach(aud => {
+    (D.aud_detail[aud]||[]).forEach(r => {
+      raw.push({...r, _audience: aud});  // 加上 _audience 標記
+    });
   });
-  if(_sort==='date_desc')       rows=[...rows].sort((a,b)=>b.date_str.localeCompare(a.date_str));
-  else if(_sort==='date_asc')   rows=[...rows].sort((a,b)=>a.date_str.localeCompare(b.date_str));
-  else if(_sort==='click_rate') rows=[...rows].sort((a,b)=>(b.click_rate??-1)-(a.click_rate??-1));
-  else if(_sort==='conv_rate')  rows=[...rows].sort((a,b)=>(b.conv_rate??-1)-(a.conv_rate??-1));
-  else if(_sort==='revenue')    rows=[...rows].sort((a,b)=>(b.revenue??0)-(a.revenue??0));
-  else                          rows=[...rows].sort((a,b)=>(b.open_rate||0)-(a.open_rate||0));
 
-  // 針對篩選後資料計算加權成效
-  const selReach   = rows.reduce((s,r)=>s+r.reach,0);
-  const selOpened  = rows.reduce((s,r)=>s+r.opened,0);
-  const selClicks  = rows.reduce((s,r)=>s+r.clicks,0);
-  const selOrders  = rows.reduce((s,r)=>s+r.orders,0);
-  const selRev     = rows.reduce((s,r)=>s+r.revenue,0);
-  const selOpen    = selReach  ? +(selOpened/selReach*100).toFixed(2) : 0;
+  // 合併計算分眾彙總（重新加權）
+  const sumReach   = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.reach||0);},0);
+  const sumOpened  = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.opened||0);},0);
+  const sumClicks  = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.clicks||0);},0);
+  const sumOrders  = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.orders||0);},0);
+  const sumRev     = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.revenue||0);},0);
+  const sumN       = selAuds.reduce((s,a)=>{const x=D.aud_summary.find(y=>y.audience===a)||{};return s+(x.n||0);},0);
+  const sm = {
+    audience: selAuds.length === 1 ? selAuds[0] : `合併 ${selAuds.length} 個分眾`,
+    open:    sumReach  ? +(sumOpened/sumReach*100).toFixed(2)  : 0,
+    click:   sumOpened ? +(sumClicks/sumOpened*100).toFixed(2) : 0,
+    conv:    sumClicks ? +(sumOrders/sumClicks*100).toFixed(2) : 0,
+    reach:   sumReach, opened: sumOpened, clicks: sumClicks,
+    orders:  sumOrders, revenue: sumRev, n: sumN,
+    aov:     sumOrders ? Math.round(sumRev/sumOrders) : 0,
+  };
+
+  // 合併 stCross（多分眾 × 各發送類型）
+  const allSTSet = new Set();
+  raw.forEach(r => allSTSet.add(r.send_type));
+  const allSTs = [...allSTSet].sort();
+  const stCross = {};
+  allSTs.forEach(st => {
+    let reach=0, opened=0, clicks=0, orders=0, rev=0, n=0;
+    selAuds.forEach(aud => {
+      const v = (D.aud_st_cross[aud]||{})[st];
+      if (v){ reach+=v.reach||0; opened+=v.opened||0; clicks+=v.clicks||0;
+              orders+=v.orders||0; rev+=v.revenue||0; n+=v.n||0; }
+    });
+    stCross[st] = {
+      open:  reach  ? +(opened/reach*100).toFixed(2)  : 0,
+      click: opened ? +(clicks/opened*100).toFixed(2) : 0,
+      conv:  clicks ? +(orders/clicks*100).toFixed(2) : 0,
+      reach, opened, clicks, orders, revenue: rev, n,
+    };
+  });
+
+  // 為每筆 row 重新計算 st_avg（以合併後的 stCross 為基準）
+  raw = raw.map(r => ({
+    ...r,
+    st_avg_open:  (stCross[r.send_type]||{}).open,
+    st_avg_click: (stCross[r.send_type]||{}).click,
+  }));
+
+  const topics = [...new Set(raw.map(r => r.topic))].sort();
+
+  // 篩選
+  let rows = raw.filter(r => {
+    const okQ  = !_q || r.subject.toLowerCase().includes(_q) || r.topic.toLowerCase().includes(_q);
+    const okT  = !_dTopic || r.topic === _dTopic;
+    const okST = _selSTs.size === 0 || _selSTs.has(r.send_type);
+    return okQ && okT && okST;
+  });
+
+  // 排序
+  if (_sort === 'date_desc')      rows = [...rows].sort((a,b) => b.date_str.localeCompare(a.date_str));
+  else if (_sort === 'date_asc')  rows = [...rows].sort((a,b) => a.date_str.localeCompare(b.date_str));
+  else if (_sort === 'click_rate')rows = [...rows].sort((a,b) => (b.click_rate??-1)-(a.click_rate??-1));
+  else if (_sort === 'conv_rate') rows = [...rows].sort((a,b) => (b.conv_rate??-1)-(a.conv_rate??-1));
+  else if (_sort === 'revenue')   rows = [...rows].sort((a,b) => (b.revenue??0)-(a.revenue??0));
+  else                            rows = [...rows].sort((a,b) => (b.open_rate||0)-(a.open_rate||0));
+
+  // 篩選後加權成效（這是「均值對齊」的基礎）
+  const selReach   = rows.reduce((s,r) => s+r.reach, 0);
+  const selOpened  = rows.reduce((s,r) => s+r.opened, 0);
+  const selClicks  = rows.reduce((s,r) => s+r.clicks, 0);
+  const selOrders  = rows.reduce((s,r) => s+r.orders, 0);
+  const selRev     = rows.reduce((s,r) => s+r.revenue, 0);
+  const selOpen    = selReach  ? +(selOpened/selReach*100).toFixed(2)  : 0;
   const selClick   = selOpened ? +(selClicks/selOpened*100).toFixed(2) : 0;
   const selConv    = selClicks ? +(selOrders/selClicks*100).toFixed(2) : 0;
 
-  const total=rows.length;
-  const maxO=total?Math.max(...rows.map(r=>r.open_rate)):1;
-  const maxC=total?Math.max(...rows.map(r=>r.click_rate??0))||1:1;
-  const PS=25,pages=Math.ceil(total/PS)||1;
-  if(_pg>pages)_pg=pages;
-  const s=(_pg-1)*PS,e=Math.min(s+PS,total),slice=rows.slice(s,e);
-
-  let pg='';
-  if(pages>1){
-    pg+=`<span style="margin-right:4px">${s+1}–${e} / ${total} 筆</span>`;
-    pg+=`<button onclick="_pg=${_pg-1};drawDetail()" ${_pg===1?'disabled':''}>‹ 上頁</button>`;
-    for(let p=1;p<=pages;p++){
-      if(p===1||p===pages||Math.abs(p-_pg)<=1)pg+=`<button onclick="_pg=${p};drawDetail()" class="${p===_pg?'on':''}">${p}</button>`;
-      else if(Math.abs(p-_pg)===2)pg+='<span style="padding:0 2px">…</span>';
-    }
-    pg+=`<button onclick="_pg=${_pg+1};drawDetail()" ${_pg===pages?'disabled':''}>下頁 ›</button>`;
+  // 多選類型專用加權（從 stCross 篩出選中的，重新加權）
+  let selOpen_st = selOpen, selClick_st = selClick, selConv_st = selConv;
+  let sOpen_box = selOpen, sClick_box = selClick, sConv_box = selConv, sRev_box = selRev, sOrders_box = selOrders, sReach_box = selReach;
+  if (_selSTs.size > 0){
+    const sel = [..._selSTs].map(st => stCross[st]||{});
+    const sR = sel.reduce((a,v)=>a+(v.reach||0),0);
+    const sOp = sel.reduce((a,v)=>a+(v.opened||0),0);
+    const sCl = sel.reduce((a,v)=>a+(v.clicks||0),0);
+    const sOd = sel.reduce((a,v)=>a+(v.orders||0),0);
+    const sRv = sel.reduce((a,v)=>a+(v.revenue||0),0);
+    selOpen_st  = sR  ? +(sOp/sR*100).toFixed(2) : 0;
+    selClick_st = sOp ? +(sCl/sOp*100).toFixed(2) : 0;
+    selConv_st  = sCl ? +(sOd/sCl*100).toFixed(2) : 0;
+    sOpen_box=selOpen_st; sClick_box=selClick_st; sConv_box=selConv_st;
+    sRev_box=sRv; sOrders_box=sOd; sReach_box=sR;
   }
 
-  // 若有多選發送類型，計算並顯示該組合的加權均值；否則顯示完整基準表
-  let stRows = '';
-  if(_selSTs.size > 0){
-    // 多選模式：只顯示選中的發送類型，並計算該組合的加權均值
-    const selStEntries = Object.entries(stCross).filter(([st,v]) => _selSTs.has(st));
-    const selReach_st   = selStEntries.reduce((s,[,v])=>s+(v.reach||0),0);
-    const selOpened_st  = selStEntries.reduce((s,[,v])=>s+(v.opened||0),0);
-    const selClicks_st  = selStEntries.reduce((s,[,v])=>s+(v.clicks||0),0);
-    const selOrders_st  = selStEntries.reduce((s,[,v])=>s+(v.orders||0),0);
-    const selRev_st     = selStEntries.reduce((s,[,v])=>s+(v.revenue||0),0);
-    const selOpen_st    = selReach_st  ? +(selOpened_st/selReach_st*100).toFixed(2)  : 0;
-    const selClick_st   = selOpened_st ? +(selClicks_st/selOpened_st*100).toFixed(2) : 0;
-    const selConv_st    = selClicks_st ? +(selOrders_st/selClicks_st*100).toFixed(2) : 0;
-    // 顯示選中的發送類型
-    stRows = selStEntries.sort((a,b)=>b[1].open-a[1].open).map(([st,v])=>
-      `<tr><td style="font-size:12px">${st}</td>
-       <td style="font-size:12px;font-weight:600;color:#2b6cb0">${v.open}%</td>
-       <td style="font-size:12px;font-weight:600;color:#276749">${v.click}%</td>
-       <td style="font-size:12px;color:#a07010">${v.conv??0}%</td>
-       <td style="font-size:12px;color:#5b21b6">${fmtM(v.revenue||0)}</td>
-       <td style="font-size:11px;color:#888">${fmt(v.orders||0)} 筆 / ${v.n} 篇</td></tr>`
-    ).join('');
-    // 加上多選均值列
-    stRows += `<tr style="background:#f0f4ff;font-weight:600">
+  const total = rows.length;
+  const maxO = total ? Math.max(...rows.map(r=>r.open_rate)) : 1;
+  const maxC = total ? Math.max(...rows.map(r=>r.click_rate??0)) || 1 : 1;
+  const PS = 25, pages = Math.ceil(total/PS) || 1;
+  if (_pg > pages) _pg = pages;
+  const s = (_pg-1)*PS, e = Math.min(s+PS, total), slice = rows.slice(s, e);
+
+  let pg = '';
+  if (pages > 1){
+    pg += `<span style="margin-right:4px">${s+1}–${e} / ${total} 筆</span>`;
+    pg += `<button onclick="_pg=${_pg-1};drawDetail()" ${_pg===1?'disabled':''}>‹ 上頁</button>`;
+    for (let p=1; p<=pages; p++){
+      if (p===1 || p===pages || Math.abs(p-_pg)<=1)
+        pg += `<button onclick="_pg=${p};drawDetail()" class="${p===_pg?'on':''}">${p}</button>`;
+      else if (Math.abs(p-_pg)===2) pg += '<span style="padding:0 2px">…</span>';
+    }
+    pg += `<button onclick="_pg=${_pg+1};drawDetail()" ${_pg===pages?'disabled':''}>下頁 ›</button>`;
+  }
+
+  const stRowsTable = Object.entries(stCross).filter(([st,v]) => _selSTs.size===0 || _selSTs.has(st))
+    .sort((a,b) => b[1].open - a[1].open).map(([st,v]) =>
+    `<tr><td style="font-size:12px">${st}</td>
+     <td style="font-size:12px;font-weight:600;color:#2b6cb0">${v.open}%</td>
+     <td style="font-size:12px;font-weight:600;color:#276749">${v.click}%</td>
+     <td style="font-size:12px;color:#a07010">${v.conv??0}%</td>
+     <td style="font-size:12px;color:#5b21b6">${fmtM(v.revenue||0)}</td>
+     <td style="font-size:11px;color:#888">${fmt(v.orders||0)} 筆 / ${v.n} 篇</td></tr>`
+  ).join('');
+
+  let stRowsFinal = stRowsTable;
+  if (_selSTs.size > 0){
+    stRowsFinal += `<tr style="background:#f0f4ff;font-weight:600">
       <td style="font-size:12px;color:#2b6cb0">▸ 多選均值</td>
       <td style="font-size:12px;color:#2b6cb0">${selOpen_st}%</td>
       <td style="font-size:12px;color:#276749">${selClick_st}%</td>
       <td style="font-size:12px;color:#a07010">${selConv_st}%</td>
-      <td style="font-size:12px;color:#5b21b6">${fmtM(selRev_st)}</td>
-      <td style="font-size:11px;color:#888">${fmt(selOrders_st)} 筆 / ${Object.keys(stCross).filter(st=>_selSTs.has(st)).length} 個類型</td>
+      <td style="font-size:12px;color:#5b21b6">${fmtM(sRev_box)}</td>
+      <td style="font-size:11px;color:#888">${fmt(sOrders_box)} 筆 / ${_selSTs.size} 個類型</td>
     </tr>`;
-  } else {
-    // 無多選：顯示完整基準表（所有發送類型）
-    stRows = Object.entries(stCross).sort((a,b)=>b[1].open-a[1].open).map(([st,v])=>
-      `<tr><td style="font-size:12px">${st}</td>
-       <td style="font-size:12px;font-weight:600;color:#2b6cb0">${v.open}%</td>
-       <td style="font-size:12px;font-weight:600;color:#276749">${v.click}%</td>
-       <td style="font-size:12px;color:#a07010">${v.conv??0}%</td>
-       <td style="font-size:12px;color:#5b21b6">${fmtM(v.revenue||0)}</td>
-       <td style="font-size:11px;color:#888">${fmt(v.orders||0)} 筆 / ${v.n} 篇</td></tr>`
-    ).join('');
   }
 
-  // st checkboxes html
-  const stChecksHtml=allSTs.map(st=>{
-    const on=_selSTs.has(st);
-    const col=tc(st);
-    const v=(stCross[st]||{});
-    const badge=on&&v.open?`<span style="font-size:10px;opacity:.8;margin-left:2px">開${v.open}% 點${v.click}%</span>`:'';
+  // st checkbox HTML
+  const stChecksHtml = allSTs.map(st => {
+    const on = _selSTs.has(st);
+    const col = tc(st);
+    const v = stCross[st] || {};
+    const badge = on && v.open ? `<span style="font-size:10px;opacity:.8;margin-left:2px">開${v.open}% 點${v.click}%</span>` : '';
     return `<label class="st-check${on?' on':''}" onclick="toggleST('${st}')">
       <span style="width:8px;height:8px;border-radius:50%;background:${col};display:inline-block;flex-shrink:0"></span>
       ${st}${badge}</label>`;
   }).join('');
 
-  document.getElementById('dtContent').innerHTML=`
-    <!-- 篩選後加權 KPI -->
+  document.getElementById('dtContent').innerHTML = `
     <div class="cards" style="margin-bottom:12px">
-      <div class="card avg"><div class="lbl">${_selSTs.size?'篩選後':'${_dAud}'} 加權開封率</div>
-        <div class="val">${selOpen}%</div>
-        <div class="sub">開封 ${fmt(selOpened)} / 受眾 ${fmt(selReach)}</div></div>
-      <div class="card avg"><div class="lbl">加權開啟點擊率</div><div class="val">${selClick}%</div>
-        <div class="sub">點擊 ${fmt(selClicks)}</div></div>
-      <div class="card avg"><div class="lbl">訂單轉換率</div><div class="val">${selConv}%</div>
-        <div class="sub">訂單 ${fmt(selOrders)}</div></div>
-      <div class="card rev"><div class="lbl">篩選後營業額</div><div class="val" style="font-size:16px">${fmtM(selRev)}</div>
-        <div class="sub">篩選筆數 ${total}</div></div>
+      <div class="card avg"><div class="lbl">${sm.audience} 加權開封率</div>
+        <div class="val">${sm.open}%</div>
+        <div class="sub">開封 ${fmt(sm.opened)} / 受眾 ${fmt(sm.reach)}</div></div>
+      <div class="card avg"><div class="lbl">加權開啟點擊率</div><div class="val">${sm.click}%</div>
+        <div class="sub">點擊 ${fmt(sm.clicks)}</div></div>
+      <div class="card avg"><div class="lbl">訂單轉換率</div><div class="val">${sm.conv}%</div>
+        <div class="sub">訂單 ${fmt(sm.orders)}</div></div>
+      <div class="card rev"><div class="lbl">累積營業額</div><div class="val">${fmtM(sm.revenue)}</div>
+        <div class="sub">客單均 ${fmt(sm.aov)}</div></div>
+      <div class="card"><div class="lbl">推播篇數</div><div class="val">${sm.n}</div>
+        <div class="sub">分眾數 ${selAuds.length}</div></div>
     </div>
 
-    <!-- 分眾×發送類型基準表 -->
     <div class="box">
-      <div class="box-title">「${_dAud}」× 各發送類型 加權基準</div>
+      <div class="box-title">「${sm.audience}」× 各發送類型 加權基準</div>
       <div class="tbl-wrap"><table style="table-layout:auto">
         <thead><tr><th>發送類型</th><th>加權開封率</th><th>加權開啟點擊率</th><th>訂單轉換率</th><th>營業額</th><th>訂單 / 篇數</th></tr></thead>
-        <tbody>${stRows}</tbody>
+        <tbody>${stRowsFinal}</tbody>
       </table></div>
     </div>
 
-    <!-- 篩選區 -->
     <div class="box">
       <div class="box-title">多選發送類型 <span style="font-size:11px;color:#999;font-weight:400">— 加權成效即時更新</span>
         <button onclick="selectAllSTs()" style="margin-left:auto;padding:3px 10px;border:1px solid #2b6cb0;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#2b6cb0">全選</button>
         <button onclick="_selSTs=new Set();drawDetail()" style="margin-left:6px;padding:3px 10px;border:1px solid #ccc;border-radius:6px;font-size:11px;cursor:pointer;background:#fff">清除</button>
       </div>
       <div class="st-checks" id="stChecks">${stChecksHtml}</div>
-      ${_selSTs.size>0?(()=>{
-        const selStRows=[..._selSTs].map(st=>stCross[st]||{});
-        const sReach=selStRows.reduce((a,v)=>a+(v.reach||0),0);
-        const sOpened=selStRows.reduce((a,v)=>a+(v.opened||0),0);
-        const sClicks=selStRows.reduce((a,v)=>a+(v.clicks||0),0);
-        const sOrders=selStRows.reduce((a,v)=>a+(v.orders||0),0);
-        const sRev=selStRows.reduce((a,v)=>a+(v.revenue||0),0);
-        const sOpen=sReach?+(sOpened/sReach*100).toFixed(2):0;
-        const sClick=sOpened?+(sClicks/sOpened*100).toFixed(2):0;
-        const sConv=sClicks?+(sOrders/sClicks*100).toFixed(2):0;
-        return `<div style="background:#f0f4ff;border:1px solid #c3d0f0;border-radius:8px;padding:10px 14px;font-size:12px;display:flex;flex-wrap:wrap;gap:14px;align-items:center">
-          <span style="font-weight:500;color:#2b6cb0">已選 ${_selSTs.size} 個類型 加權均值：</span>
-          <span>開封率 <b style="color:#2b6cb0">${sOpen}%</b></span>
-          <span>開啟點擊率 <b style="color:#276749">${sClick}%</b></span>
-          <span>轉換率 <b style="color:#a07010">${sConv}%</b></span>
-          <span>營業額 <b style="color:#5b21b6">${fmtM(sRev)}</b></span>
-          <span style="color:#888">訂單 ${fmt(sOrders)} 筆 / 受眾 ${fmt(sReach)}</span>
-        </div>`;
-      })():''}
+      ${_selSTs.size>0?`<div style="background:#f0f4ff;border:1px solid #c3d0f0;border-radius:8px;padding:10px 14px;font-size:12px;display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+        <span style="font-weight:500;color:#2b6cb0">已選 ${_selSTs.size} 個類型 加權均值：</span>
+        <span>開封率 <b style="color:#2b6cb0">${selOpen_st}%</b></span>
+        <span>開啟點擊率 <b style="color:#276749">${selClick_st}%</b></span>
+        <span>轉換率 <b style="color:#a07010">${selConv_st}%</b></span>
+        <span>營業額 <b style="color:#5b21b6">${fmtM(sRev_box)}</b></span>
+        <span style="color:#888">訂單 ${fmt(sOrders_box)} 筆 / 受眾 ${fmt(sReach_box)}</span>
+      </div>`:''}
       <div class="ctrl">
         <input id="dQ" placeholder="搜尋主題或溝通品項…" value="${_q}"
                oninput="_q=this.value.toLowerCase();_pg=1;drawDetail()">
         <select id="dTopicSel" onchange="_dTopic=this.value;_pg=1;drawDetail()">
           <option value="">全部溝通品項</option>
-          ${topics.map(t=>`<option value="${t}" ${t===_dTopic?'selected':''}>${t}</option>`).join('')}
+          ${topics.map(t => `<option value="${t}" ${t===_dTopic?'selected':''}>${t}</option>`).join('')}
         </select>
         <select id="dSort" onchange="_sort=this.value;_pg=1;drawDetail()">
-          <option value="open_rate" ${_sort==='open_rate'?'selected':''}>開封率 ↓</option>
+          <option value="open_rate"  ${_sort==='open_rate'?'selected':''}>開封率 ↓</option>
           <option value="click_rate" ${_sort==='click_rate'?'selected':''}>開啟點擊率 ↓</option>
-          <option value="conv_rate" ${_sort==='conv_rate'?'selected':''}>轉換率 ↓</option>
-          <option value="revenue" ${_sort==='revenue'?'selected':''}>營業額 ↓</option>
-          <option value="date_desc" ${_sort==='date_desc'?'selected':''}>日期 ↓</option>
-          <option value="date_asc" ${_sort==='date_asc'?'selected':''}>日期 ↑</option>
+          <option value="conv_rate"  ${_sort==='conv_rate'?'selected':''}>轉換率 ↓</option>
+          <option value="revenue"    ${_sort==='revenue'?'selected':''}>營業額 ↓</option>
+          <option value="date_desc"  ${_sort==='date_desc'?'selected':''}>日期 ↓</option>
+          <option value="date_asc"   ${_sort==='date_asc'?'selected':''}>日期 ↑</option>
         </select>
       </div>
       <div class="tbl-wrap"><table>
         <thead><tr>
           <th style="width:26px">#</th><th style="width:76px">日期</th>
           <th style="width:78px">發送類型</th><th>發送主題</th>
+          <th style="width:90px">分眾</th>
           <th style="width:100px">溝通品項</th><th style="width:50px">受眾</th>
           <th style="width:112px">開封率</th><th style="width:104px">開啟點擊率</th>
           <th style="width:65px">轉換率</th><th style="width:55px">訂單</th>
           <th style="width:76px">營業額</th>
         </tr></thead>
         <tbody>
-        ${slice.map((r,i)=>{
-          const rank=s+i+1,col=tc(r.send_type);
-          const stAvgO=_selSTs.size>0?selOpen_st:r.st_avg_open,stAvgC=_selSTs.size>0?selClick_st:r.st_avg_click;
-          const bO=stAvgO!=null&&r.open_rate<stAvgO;
-          const bC=stAvgC!=null&&r.click_rate!=null&&r.click_rate<stAvgC;
-          const ow=((r.open_rate||0)/maxO*100).toFixed(0);
-          const cv=r.click_rate,cw=cv!=null?((cv/maxC)*100).toFixed(0):0;
+        ${slice.map((r,i) => {
+          const rank = s+i+1, col = tc(r.send_type);
+          const stAvgO = _selSTs.size>0 ? selOpen_st  : r.st_avg_open;
+          const stAvgC = _selSTs.size>0 ? selClick_st : r.st_avg_click;
+          const bO = stAvgO!=null && r.open_rate < stAvgO;
+          const bC = stAvgC!=null && r.click_rate!=null && r.click_rate < stAvgC;
+          const ow = ((r.open_rate||0)/maxO*100).toFixed(0);
+          const cv = r.click_rate, cw = cv!=null ? ((cv/maxC)*100).toFixed(0) : 0;
           return `<tr>
             <td style="color:#bbb;font-size:11px">${rank}</td>
             <td style="font-size:11px;color:#888">${r.date_str}</td>
             <td><span class="tag" style="background:${col}18;color:${col};font-size:10px">${r.send_type}</span></td>
             <td title="${r.subject}" style="font-size:12px">${r.subject}</td>
+            <td class="tdw" style="font-size:11px;color:#888">${r._audience}</td>
             <td class="tdw" style="font-size:11px;color:#888">${r.topic}</td>
             <td style="font-size:11px;color:#888">${fmt(r.reach)}</td>
             <td><div style="display:flex;align-items:center;gap:3px">
@@ -891,44 +1083,7 @@ function drawDetail(){
         </tbody>
       </table></div>
       <div class="pager">${pg}</div>
-      <p class="note" style="margin-top:8px">❗ = 低於「分眾 × 發送類型」加權基準　｜　<span class="st-badge">均 XX%</span> = 基準值</p>
-    </div>`;
-}
-
-function renderInsights(ym){
-  const el=document.getElementById('insightContent');
-  if(!el)return;
-  const ins=INSIGHTS[ym];
-  if(!ins){el.innerHTML='<p style="font-size:12px;color:#bbb">本月無診斷資料</p>';return;}
-  const isCurrent = ym === CURRENT_YM;
-  const prosHtml=ins.pros.map(p=>`
-    <div style="display:flex;gap:8px;margin-bottom:7px;align-items:flex-start">
-      <span style="color:#0F6E56;font-size:15px;flex-shrink:0;margin-top:0">✓</span>
-      <span style="font-size:12px;color:#444;line-height:1.65">${p}</span>
-    </div>`).join('');
-  const consHtml=ins.cons.map(c=>`
-    <div style="display:flex;gap:8px;margin-bottom:7px;align-items:flex-start">
-      <span style="color:#c53030;font-size:15px;flex-shrink:0;margin-top:0">✕</span>
-      <span style="font-size:12px;color:#444;line-height:1.65">${c}</span>
-    </div>`).join('');
-  el.innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      <div style="background:#f0faf4;border:1px solid #9FE1CB;border-radius:10px;padding:14px 16px">
-        <div style="font-size:12px;font-weight:600;color:#0F6E56;margin-bottom:10px">✦ 本月亮點</div>
-        ${prosHtml}
-      </div>
-      <div style="background:#fff5f5;border:1px solid #F7C1C1;border-radius:10px;padding:14px 16px">
-        <div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:10px">✦ 問題點</div>
-        ${consHtml}
-      </div>
-    </div>
-    ${isCurrent ? `<div style="background:#f0f4ff;border:1px solid #c3d0f0;border-radius:8px;padding:9px 14px;margin-bottom:10px;font-size:11px;color:#2b6cb0;display:flex;align-items:center;gap:6px">
-      <span style="font-size:14px">🔄</span>
-      <span>本月（${MLabels[ym]}）資料仍在累積中，以下結論將隨推播更新而調整</span>
-    </div>` : ''}
-    <div style="background:#fffbf0;border:1px solid #FAC775;border-radius:10px;padding:14px 16px">
-      <div style="font-size:12px;font-weight:600;color:#854F0B;margin-bottom:8px">✦ 建議方向</div>
-      <div style="font-size:12px;color:#555;line-height:1.75">${ins.suggest}</div>
+      <p class="note" style="margin-top:8px">❗ = 低於目前篩選後的加權基準　｜　<span class="st-badge">均 XX%</span> = 基準值</p>
     </div>`;
 }
 
