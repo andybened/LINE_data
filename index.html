@@ -1087,6 +1087,43 @@ function drawDetail(){
     </div>`;
 }
 
+function renderInsights(ym){
+  const el=document.getElementById('insightContent');
+  if(!el)return;
+  const ins=INSIGHTS[ym];
+  if(!ins){el.innerHTML='<p style="font-size:12px;color:#bbb">本月無診斷資料</p>';return;}
+  const isCurrent = ym === CURRENT_YM;
+  const prosHtml=ins.pros.map(p=>`
+    <div style="display:flex;gap:8px;margin-bottom:7px;align-items:flex-start">
+      <span style="color:#0F6E56;font-size:15px;flex-shrink:0;margin-top:0">✓</span>
+      <span style="font-size:12px;color:#444;line-height:1.65">${p}</span>
+    </div>`).join('');
+  const consHtml=ins.cons.map(c=>`
+    <div style="display:flex;gap:8px;margin-bottom:7px;align-items:flex-start">
+      <span style="color:#c53030;font-size:15px;flex-shrink:0;margin-top:0">✕</span>
+      <span style="font-size:12px;color:#444;line-height:1.65">${c}</span>
+    </div>`).join('');
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div style="background:#f0faf4;border:1px solid #9FE1CB;border-radius:10px;padding:14px 16px">
+        <div style="font-size:12px;font-weight:600;color:#0F6E56;margin-bottom:10px">✦ 本月亮點</div>
+        ${prosHtml}
+      </div>
+      <div style="background:#fff5f5;border:1px solid #F7C1C1;border-radius:10px;padding:14px 16px">
+        <div style="font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:10px">✦ 問題點</div>
+        ${consHtml}
+      </div>
+    </div>
+    ${isCurrent ? `<div style="background:#f0f4ff;border:1px solid #c3d0f0;border-radius:8px;padding:9px 14px;margin-bottom:10px;font-size:11px;color:#2b6cb0;display:flex;align-items:center;gap:6px">
+      <span style="font-size:14px">🔄</span>
+      <span>本月（${MLabels[ym]}）資料仍在累積中，以下結論將隨推播更新而調整</span>
+    </div>` : ''}
+    <div style="background:#fffbf0;border:1px solid #FAC775;border-radius:10px;padding:14px 16px">
+      <div style="font-size:12px;font-weight:600;color:#854F0B;margin-bottom:8px">✦ 建議方向</div>
+      <div style="font-size:12px;color:#555;line-height:1.75">${ins.suggest}</div>
+    </div>`;
+}
+
 function selectAllSTs(){
   const allSTs=[...new Set((D.aud_detail[_dAud]||[]).map(r=>r.send_type))];
   _selSTs=new Set(allSTs);
