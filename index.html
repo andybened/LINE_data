@@ -436,7 +436,7 @@ function renderDiag(ym){
       <div class="card ${isWarnO?'warn':'good'}"><div class="lbl">本月加權開封率</div>
         <div class="val">${mo.open}% ${isWarnO?'❗':''}</div>
         <div class="sub">整體 ${gAvgO}%　${dO!=null?`較上月 ${dO>=0?'▲':'▼'} ${Math.abs(dO)}%`:''}</div></div>
-      <div class="card ${isWarnC?'warn':'good'}"><div class="lbl">本月加權點擊率</div>
+      <div class="card ${isWarnC?'warn':'good'}"><div class="lbl">本月加權開啟點擊率</div>
         <div class="val">${mo.click}% ${isWarnC?'❗':''}</div>
         <div class="sub">整體 ${gAvgC}%　${dC!=null?`較上月 ${dC>=0?'▲':'▼'} ${Math.abs(dC)}%`:''}</div></div>
       <div class="card avg"><div class="lbl">訂單轉換率</div><div class="val">${mo.conv??0}%</div>
@@ -447,13 +447,37 @@ function renderDiag(ym){
         <div class="sub">受眾 ${fmt(mo.reach)}</div></div>
     </div>
     <div class="diag-grid">
-      <div class="box"><div class="box-title">各分眾開封率</div>
-        <div style="position:relative;width:100%;height:${audH}px"><canvas id="dAud"></canvas></div></div>
-      <div class="box"><div class="box-title">各溝通品項開封率</div>
-        <div style="position:relative;width:100%;height:${topH}px"><canvas id="dTopic"></canvas></div></div>
+      <div class="box">
+        <div class="box-title">各分眾
+          <div class="mtoggle" style="margin-left:auto">
+            <button id="dAudB1" class="on" onclick="diagSmallS('aud','open','${ym}')">開封率</button>
+            <button id="dAudB2" onclick="diagSmallS('aud','click','${ym}')">開啟點擊率</button>
+            <button id="dAudB3" onclick="diagSmallS('aud','conv','${ym}')">轉換率</button>
+          </div>
+        </div>
+        <div style="position:relative;width:100%;height:${audH}px"><canvas id="dAud"></canvas></div>
+      </div>
+      <div class="box">
+        <div class="box-title">各溝通品項
+          <div class="mtoggle" style="margin-left:auto">
+            <button id="dTopicB1" class="on" onclick="diagSmallS('topic','open','${ym}')">開封率</button>
+            <button id="dTopicB2" onclick="diagSmallS('topic','click','${ym}')">開啟點擊率</button>
+            <button id="dTopicB3" onclick="diagSmallS('topic','conv','${ym}')">轉換率</button>
+          </div>
+        </div>
+        <div style="position:relative;width:100%;height:${topH}px"><canvas id="dTopic"></canvas></div>
+      </div>
     </div>
-    <div class="box"><div class="box-title">各發送類型開封率</div>
-      <div style="position:relative;width:100%;height:${stH}px"><canvas id="dST"></canvas></div></div>
+    <div class="box">
+      <div class="box-title">各發送類型
+        <div class="mtoggle" style="margin-left:auto">
+          <button id="dSTB1" class="on" onclick="diagSmallS('st','open','${ym}')">開封率</button>
+          <button id="dSTB2" onclick="diagSmallS('st','click','${ym}')">開啟點擊率</button>
+          <button id="dSTB3" onclick="diagSmallS('st','conv','${ym}')">轉換率</button>
+        </div>
+      </div>
+      <div style="position:relative;width:100%;height:${stH}px"><canvas id="dST"></canvas></div>
+    </div>
     <div class="box">
       <div class="box-title">本月推播明細 <span style="font-size:11px;color:#999;font-weight:400">共 ${det.articles.length} 筆</span></div>
       <div class="ctrl">
@@ -475,11 +499,38 @@ function renderDiag(ym){
       <div class="box-title" style="margin-bottom:14px">📊 本月診斷摘要</div>
       <div id="insightContent"></div>
     </div>`;
-  mkSmallBar('dAud',det.by_aud.map(x=>x.audience),det.by_aud.map(x=>x.open),'rgba(43,108,176,0.8)',gAvgO);
-  mkSmallBar('dTopic',det.by_topic.map(x=>x.topic),det.by_topic.map(x=>x.open),'rgba(39,103,73,0.8)',gAvgO);
-  mkSmallBar('dST',det.by_st.map(x=>x.send_type),det.by_st.map(x=>x.open),'rgba(83,74,183,0.8)',gAvgO);
+  _diagYm = ym;
+  diagSmallS('aud','open',ym);
+  diagSmallS('topic','open',ym);
+  diagSmallS('st','open',ym);
   diagArtSort('open_rate',ym);
 }
+let _diagYm = '';
+function diagSmallS(type, metric, ym){
+  const det = D.monthly_detail[ym];
+  let labels, data, color, baseAvg;
+  if (type === 'aud'){
+    labels = det.by_aud.map(x => x.audience);
+    data   = det.by_aud.map(x => x[metric] ?? 0);
+    color  = 'rgba(43,108,176,0.8)';
+    setTog(['dAudB1','dAudB2','dAudB3'], ['open','click','conv'].indexOf(metric));
+  } else if (type === 'topic'){
+    labels = det.by_topic.map(x => x.topic);
+    data   = det.by_topic.map(x => x[metric] ?? 0);
+    color  = 'rgba(39,103,73,0.8)';
+    setTog(['dTopicB1','dTopicB2','dTopicB3'], ['open','click','conv'].indexOf(metric));
+  } else {
+    labels = det.by_st.map(x => x.send_type);
+    data   = det.by_st.map(x => x[metric] ?? 0);
+    color  = 'rgba(83,74,183,0.8)';
+    setTog(['dSTB1','dSTB2','dSTB3'], ['open','click','conv'].indexOf(metric));
+  }
+  // 基準線：對應指標的整體加權平均
+  baseAvg = metric === 'open' ? gAvgO : metric === 'click' ? gAvgC : gAvgConv;
+  const canvasId = type === 'aud' ? 'dAud' : type === 'topic' ? 'dTopic' : 'dST';
+  mkSmallBar(canvasId, labels, data, color, baseAvg);
+}
+
 function diagArtSTFilter(st,ym){_diagST=st;const sk=document.getElementById('dArtSort')?document.getElementById('dArtSort').value:'open_rate';diagArtSort(sk,ym);}
 function diagArtSort(sk,ym){
   renderInsights(ym);
