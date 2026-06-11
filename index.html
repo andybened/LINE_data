@@ -1183,8 +1183,13 @@ function drawProd(){
   else rows=[...rows].sort((a,b)=>(b.open_rate||0)-(a.open_rate||0));
 
   const pSel = _selProds.size? _wsumRows(raw.filter(r=>(r.products||[]).some(p=>_selProds.has(p)))) : null;
+  // 會隨選取變動的基準：有選產品 → 所選產品去重均值；未選 → 客群×期間整體均值
+  const baseO = pSel ? pSel.open : sm.open;
+  const baseC = pSel ? pSel.click : sm.click;
+  const baseLabel = pSel ? `已選 ${_selProds.size} 個產品` : '客群整體';
 
-  const total=rows.length, maxO=total?Math.max(...rows.map(r=>r.open_rate)):1;
+  const total=rows.length, maxO=total?Math.max(...rows.map(r=>r.open_rate)):1,
+        maxC=total?(Math.max(...rows.map(r=>r.click_rate??0))||1):1;
   const PS=25, pages=Math.ceil(total/PS)||1; if(_pgP>pages)_pgP=pages;
   const s=(_pgP-1)*PS, e=Math.min(s+PS,total), slice=rows.slice(s,e);
   let pg='';
@@ -1258,14 +1263,17 @@ function drawProd(){
           <th style="width:78px">發送類型</th><th>發送主題</th>
           <th style="width:90px">分眾</th>
           <th style="width:150px">產品選項</th><th style="width:50px">受眾</th>
-          <th style="width:90px">開封率</th><th style="width:90px">開啟點擊率</th>
+          <th style="width:112px">開封率</th><th style="width:104px">開啟點擊率</th>
           <th style="width:65px">轉換率</th><th style="width:55px">訂單</th>
           <th style="width:76px">營業額</th>
         </tr></thead>
         <tbody>
         ${slice.map((r,i) => {
           const rank = s+i+1, col = tc(r.send_type);
+          const bO = baseO!=null && r.open_rate < baseO;
+          const bC = baseC!=null && r.click_rate!=null && r.click_rate < baseC;
           const ow = ((r.open_rate||0)/maxO*100).toFixed(0);
+          const cv = r.click_rate, cw = cv!=null ? ((cv/maxC)*100).toFixed(0) : 0;
           const prods=(r.products||[]).map(p=>{
             const hit=_selProds.has(p);
             return `<span class="tag" style="font-size:10px;background:${hit?'#5b21b620':'#eee'};color:${hit?'#5b21b6':'#888'}">${p}</span>`;
@@ -1279,9 +1287,17 @@ function drawProd(){
             <td style="font-size:11px">${prods}</td>
             <td style="font-size:11px;color:#888">${fmt(r.reach)}</td>
             <td><div style="display:flex;align-items:center;gap:3px">
-              <div class="barg" style="width:32px"><div class="barf" style="width:${ow}%;background:${C_OPEN}"></div></div>
-              <span style="font-weight:600;min-width:30px;font-size:12px">${r.open_rate.toFixed(1)}%</span></div></td>
-            <td style="font-size:12px;color:#276749;font-weight:600">${r.click_rate!=null?r.click_rate.toFixed(1)+'%':'—'}</td>
+              <div class="barg" style="width:32px"><div class="barf" style="width:${ow}%;background:${bO?C_WARN:C_OPEN}"></div></div>
+              <span style="font-weight:600;min-width:30px;font-size:12px;color:${bO?C_WARN:'#1a1a18'}">${r.open_rate.toFixed(1)}%</span>
+              ${bO?`<span style="color:${C_WARN};font-size:10px">❗</span>`:''}
+            </div>
+            ${baseO!=null?`<div class="st-badge">均 ${baseO}%</div>`:''}</td>
+            <td><div style="display:flex;align-items:center;gap:3px">
+              <div class="barg" style="width:30px"><div class="barf" style="width:${cw}%;background:${bC?C_WARN:C_CLICK}"></div></div>
+              <span style="font-weight:600;min-width:28px;font-size:12px;color:${bC?C_WARN:'#1a1a18'}">${cv!=null?cv.toFixed(1)+'%':'—'}</span>
+              ${bC?`<span style="color:${C_WARN};font-size:10px">❗</span>`:''}
+            </div>
+            ${baseC!=null?`<div class="st-badge">均 ${baseC}%</div>`:''}</td>
             <td style="font-size:12px;color:${r.conv_rate?'#a07010':'#bbb'}">${r.conv_rate!=null?r.conv_rate.toFixed(2)+'%':'—'}</td>
             <td style="font-size:12px;font-weight:${r.orders?600:400};color:${r.orders?'#1a1a18':'#bbb'}">${r.orders||'—'}</td>
             <td style="font-size:12px;color:${r.revenue?'#5b21b6':'#bbb'}">${r.revenue?fmtM(r.revenue):'—'}</td>
@@ -1290,7 +1306,7 @@ function drawProd(){
         </tbody>
       </table></div>
       <div class="pager">${pg}</div>
-      <p class="note" style="margin-top:8px">紫色標籤 = 已選產品　｜　一篇含多產品時，各產品基準分別計入該篇</p>
+      <p class="note" style="margin-top:8px">❗ = 低於目前基準（${baseLabel}）　｜　<span class="st-badge">均 XX%</span> = 基準值，隨產品多選變動　｜　紫色標籤 = 已選產品</p>
     </div>`;
 }
 
