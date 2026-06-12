@@ -100,9 +100,9 @@ td.tdw{white-space:normal;line-height:1.35}
 <div id="ov" class="pg on">
   <div class="range-bar">
     <label>📅 自訂區間：</label>
-    <select id="rfrom" onchange="applyRange()"></select>
+    <input type="date" id="rfrom" onchange="applyRange()">
     <span style="color:#ccc">→</span>
-    <select id="rto" onchange="applyRange()"></select>
+    <input type="date" id="rto" onchange="applyRange()">
     <button onclick="resetRange()">全部</button>
     <span class="rinfo" id="rinfo"></span>
   </div>
@@ -168,9 +168,9 @@ td.tdw{white-space:normal;line-height:1.35}
     <div class="pills" id="trPills"></div>
     <div class="range-bar" style="margin-top:10px">
       <label>期間</label>
-      <select id="trRF" onchange="_trFrom=this.value;syncAudRange('tr');renderTrend()"></select>
+      <input type="date" id="trRF" onchange="_trFrom=this.value;syncAudRange('tr');renderTrend()">
       <span style="color:#888">–</span>
-      <select id="trRT" onchange="_trTo=this.value;syncAudRange('tr');renderTrend()"></select>
+      <input type="date" id="trRT" onchange="_trTo=this.value;syncAudRange('tr');renderTrend()">
     </div>
   </div>
   <div id="trContent"><div class="empty">👆 點選分眾，查看趨勢</div></div>
@@ -186,9 +186,9 @@ td.tdw{white-space:normal;line-height:1.35}
     <div class="pills" id="dtPills"></div>
     <div class="range-bar" style="margin-top:10px">
       <label>期間</label>
-      <select id="dtRF" onchange="_dtFrom=this.value;syncAudRange('dt');_pg=1;drawDetail()"></select>
+      <input type="date" id="dtRF" onchange="_dtFrom=this.value;syncAudRange('dt');_pg=1;drawDetail()">
       <span style="color:#888">–</span>
-      <select id="dtRT" onchange="_dtTo=this.value;syncAudRange('dt');_pg=1;drawDetail()"></select>
+      <input type="date" id="dtRT" onchange="_dtTo=this.value;syncAudRange('dt');_pg=1;drawDetail()">
     </div>
   </div>
   <div id="dtContent"><div class="empty">👆 點選分眾，查看推播明細</div></div>
@@ -204,9 +204,9 @@ td.tdw{white-space:normal;line-height:1.35}
     <div class="pills" id="pdPills"></div>
     <div class="range-bar" style="margin-top:10px">
       <label>期間</label>
-      <select id="pdRF" onchange="_pdFrom=this.value;syncAudRange('pd');_pgP=1;drawProd()"></select>
+      <input type="date" id="pdRF" onchange="_pdFrom=this.value;syncAudRange('pd');_pgP=1;drawProd()">
       <span style="color:#888">–</span>
-      <select id="pdRT" onchange="_pdTo=this.value;syncAudRange('pd');_pgP=1;drawProd()"></select>
+      <input type="date" id="pdRT" onchange="_pdTo=this.value;syncAudRange('pd');_pgP=1;drawProd()">
     </div>
   </div>
   <div id="pdContent"><div class="empty">👆 選擇客群後，以產品為切角分析</div></div>
@@ -348,45 +348,9 @@ function setTog(ids,active){
 
 /* ══ RANGE ══ */
 let rangeFrom='', rangeTo='';
-function initRange(){
-  ['rfrom','rto'].forEach(id=>{
-    const s=document.getElementById(id);
-    MONTHS.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MLabels[m];s.appendChild(o);});
-  });
-  document.getElementById('rfrom').value=MONTHS[0];
-  document.getElementById('rto').value=MONTHS[MONTHS.length-1];
-  applyRange();
-}
-function applyRange(){
-  rangeFrom=document.getElementById('rfrom').value;
-  rangeTo  =document.getElementById('rto').value;
-  if(rangeFrom>rangeTo){[rangeFrom,rangeTo]=[rangeTo,rangeFrom];}
-  const rows=D.all_rows.filter(r=>r.ym>=rangeFrom&&r.ym<=rangeTo);
-  const totalReach  = rows.reduce((s,r)=>s+r.reach,0);
-  const totalOpened = rows.reduce((s,r)=>s+r.opened,0);
-  const totalClicks = rows.reduce((s,r)=>s+r.clicks,0);
-  const totalOrders = rows.reduce((s,r)=>s+r.orders,0);
-  const totalRev    = rows.reduce((s,r)=>s+r.revenue,0);
-  gAvgO    = totalReach  ? +(totalOpened/totalReach*100).toFixed(2)  : 0;
-  gAvgC    = totalOpened ? +(totalClicks/totalOpened*100).toFixed(2) : 0;
-  gAvgConv = totalClicks ? +(totalOrders/totalClicks*100).toFixed(2) : 0;
-  const n  = rows.length;
-  const aov= totalOrders ? +(totalRev/totalOrders).toFixed(0) : 0;
-  document.getElementById('rinfo').textContent=`${MLabels[rangeFrom]} – ${MLabels[rangeTo]}　共 ${n} 筆`;
-  // update KPI cards
-  const filtMo=D.monthly_overall.filter(m=>m.ym>=rangeFrom&&m.ym<=rangeTo);
-  renderOvCards({total_open:gAvgO,total_click:gAvgC,total_conv:gAvgConv,
-    total_n:n,total_orders:totalOrders,total_revenue:totalRev,avg_aov:aov,
-    total_opened:totalOpened,total_reach:totalReach,total_clicks:totalClicks});
-  renderOvCharts(filtMo);
-  // update note
-  document.getElementById('ovNote').textContent=`可複選指標同時比較（區間加權：開封 ${gAvgO}% / 點擊 ${gAvgC}% / 轉換 ${gAvgConv}%）`;
-}
-function resetRange(){
-  document.getElementById('rfrom').value=MONTHS[0];
-  document.getElementById('rto').value=MONTHS[MONTHS.length-1];
-  applyRange();
-}
+
+
+
 
 /* ══ OVERVIEW ══ */
 let _ovMetrics=new Set(['open']);
@@ -404,7 +368,7 @@ function renderOvCards(kpi){
       <div class="sub">已排除問卷 / NPS</div></div>`;
 }
 function renderOvCharts(filtMo){
-  mkMultiLine('cOvLine',_ovMetrics,filtMo);
+  mkMultiLine('cOvLine',_ovMetrics,filtMo,(filtMo||[]).map(x=>MLabels[x.ym]));
   // re-render other charts only on first load or explicit change
   const as=D.aud_summary,ts=D.topic_summary,ss=D.st_summary;
   document.getElementById('audSumDiv').style.height=Math.max(300,as.length*32+60)+'px';
@@ -610,6 +574,7 @@ function diagArtSort(sk,ym){
 let _trAuds = new Set();   // 分眾趨勢：選中的分眾
 let _dtAuds = new Set();   // 分眾明細：選中的分眾
 let _pdAuds = new Set();   // 分眾×產品：選中的分眾
+let DMIN='',DMAX='';
 let _trFrom='',_trTo='',_dtFrom='',_dtTo='',_pdFrom='',_pdTo='',_trLabels=[];
 let _trMetrics=new Set(['open']),_trTopicMetrics=new Set(['open']),_trSTMetrics=new Set(['open']);
 let _selProds=new Set(),_pgP=1,_qP='',_sortP='open_rate';
@@ -696,6 +661,25 @@ function getSTAvgHtml(st){
   return `<span class="st-badge" style="margin-left:4px">開 ${v.open}% 點 ${v.click}%</span>`;
 }
 
+/* ── 日期區間共用工具 ── */
+function _iso(ds){ return (ds||'').replace(/\//g,'-'); }            // 2025/01/01 -> 2025-01-01
+function _fmtDate(iso){ return iso ? iso.replace(/-/g,'/') : ''; }   // 2025-01-01 -> 2025/01/01
+function _inR(ds,f,t){ const d=_iso(ds); return (!f||d>=f)&&(!t||d<=t); }
+function _initDateBounds(){
+  const ds=D.all_rows.map(r=>_iso(r.date_str)).filter(Boolean).sort();
+  DMIN=ds[0]; DMAX=ds[ds.length-1];
+}
+function _setDateInput(id,val){ const el=document.getElementById(id); if(!el)return; el.min=DMIN; el.max=DMAX; el.value=val; }
+function _aggMonthly(rows){
+  const byM={}; rows.forEach(r=>{(byM[r.ym]=byM[r.ym]||[]).push(r);});
+  return Object.keys(byM).sort().map(ym=>{
+    const g=byM[ym], rc=g.reduce((s,r)=>s+r.reach,0),op=g.reduce((s,r)=>s+r.opened,0),
+      cl=g.reduce((s,r)=>s+r.clicks,0),od=g.reduce((s,r)=>s+r.orders,0),rv=g.reduce((s,r)=>s+r.revenue,0);
+    return {ym, open:rc?+(op/rc*100).toFixed(2):null, click:op?+(cl/op*100).toFixed(2):null,
+      conv:cl?+(od/cl*100).toFixed(2):0, revenue:rv, orders:od, count:g.length};
+  });
+}
+
 function mkMultiLine(id, metrics, mo, labels){
   if(CH[id])CH[id].destroy();
   const META={open:{label:'開封率 %',color:C_OPEN,axis:'y'},
@@ -726,6 +710,39 @@ function mkMultiLine(id, metrics, mo, labels){
       }}});
 }
 
+/* ── 整體總覽：日期區間 ── */
+function initRange(){
+  _initDateBounds();
+  _setDateInput('rfrom',DMIN); _setDateInput('rto',DMAX);
+  rangeFrom=DMIN; rangeTo=DMAX;
+  applyRange();
+}
+function applyRange(){
+  rangeFrom=document.getElementById('rfrom').value||DMIN;
+  rangeTo  =document.getElementById('rto').value||DMAX;
+  if(rangeFrom>rangeTo){[rangeFrom,rangeTo]=[rangeTo,rangeFrom];
+    document.getElementById('rfrom').value=rangeFrom;document.getElementById('rto').value=rangeTo;}
+  const rows=D.all_rows.filter(r=>_inR(r.date_str,rangeFrom,rangeTo));
+  const totalReach=rows.reduce((s,r)=>s+r.reach,0), totalOpened=rows.reduce((s,r)=>s+r.opened,0),
+        totalClicks=rows.reduce((s,r)=>s+r.clicks,0), totalOrders=rows.reduce((s,r)=>s+r.orders,0),
+        totalRev=rows.reduce((s,r)=>s+r.revenue,0);
+  gAvgO    = totalReach  ? +(totalOpened/totalReach*100).toFixed(2)  : 0;
+  gAvgC    = totalOpened ? +(totalClicks/totalOpened*100).toFixed(2) : 0;
+  gAvgConv = totalClicks ? +(totalOrders/totalClicks*100).toFixed(2) : 0;
+  const n=rows.length, aov= totalOrders ? +(totalRev/totalOrders).toFixed(0) : 0;
+  document.getElementById('rinfo').textContent=`${_fmtDate(rangeFrom)} – ${_fmtDate(rangeTo)}　共 ${n} 筆`;
+  const filtMo=_aggMonthly(rows);
+  renderOvCards({total_open:gAvgO,total_click:gAvgC,total_conv:gAvgConv,
+    total_n:n,total_orders:totalOrders,total_revenue:totalRev,avg_aov:aov,
+    total_opened:totalOpened,total_reach:totalReach,total_clicks:totalClicks});
+  renderOvCharts(filtMo);
+  document.getElementById('ovNote').textContent=`可複選指標同時比較（區間加權：開封 ${gAvgO}% / 點擊 ${gAvgC}% / 轉換 ${gAvgConv}%）`;
+}
+function resetRange(){
+  _setDateInput('rfrom',DMIN); _setDateInput('rto',DMAX);
+  rangeFrom=DMIN; rangeTo=DMAX; applyRange();
+}
+
 function ovLS(m){
   if(_ovMetrics.has(m)){ if(_ovMetrics.size>1) _ovMetrics.delete(m); }
   else _ovMetrics.add(m);
@@ -733,21 +750,15 @@ function ovLS(m){
     const mm=['open','click','conv','revenue'][i];
     const b=document.getElementById(id); if(b) b.classList.toggle('on',_ovMetrics.has(mm));
   });
-  const filtMo=D.monthly_overall.filter(mo=>mo.ym>=rangeFrom&&mo.ym<=rangeTo);
-  mkMultiLine('cOvLine',_ovMetrics,filtMo);
+  const mo=_aggMonthly(D.all_rows.filter(r=>_inR(r.date_str,rangeFrom,rangeTo)));
+  mkMultiLine('cOvLine',_ovMetrics,mo,mo.map(x=>MLabels[x.ym]));
 }
 
+/* ── 分眾趨勢/明細/產品：日期區間 ── */
 function initAudRanges(){
-  [['trRF','trRT'],['dtRF','dtRT'],['pdRF','pdRT']].forEach(([f,t2])=>{
-    [f,t2].forEach(id=>{const s=document.getElementById(id);if(!s)return;
-      MONTHS.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=MLabels[m];s.appendChild(o);});});
-    const sf=document.getElementById(f), st=document.getElementById(t2);
-    if(sf) sf.value=MONTHS[0];
-    if(st) st.value=MONTHS[MONTHS.length-1];
-  });
-  _trFrom=MONTHS[0];_trTo=MONTHS[MONTHS.length-1];
-  _dtFrom=MONTHS[0];_dtTo=MONTHS[MONTHS.length-1];
-  _pdFrom=MONTHS[0];_pdTo=MONTHS[MONTHS.length-1];
+  _initDateBounds();
+  [['trRF','trRT'],['dtRF','dtRT'],['pdRF','pdRT']].forEach(([f,t2])=>{ _setDateInput(f,DMIN); _setDateInput(t2,DMAX); });
+  _trFrom=DMIN;_trTo=DMAX;_dtFrom=DMIN;_dtTo=DMAX;_pdFrom=DMIN;_pdTo=DMAX;
 }
 function syncAudRange(mode){
   if(mode==='tr'){ if(_trFrom>_trTo){[_trFrom,_trTo]=[_trTo,_trFrom];
@@ -757,7 +768,11 @@ function syncAudRange(mode){
   else { if(_pdFrom>_pdTo){[_pdFrom,_pdTo]=[_pdTo,_pdFrom];
       document.getElementById('pdRF').value=_pdFrom;document.getElementById('pdRT').value=_pdTo;} }
 }
-function trRMonths(){ return MONTHS.filter(ym=>ym>=_trFrom&&ym<=_trTo); }
+function trRMonths(){
+  const ms=new Set(); const auds=Array.isArray(_aud)?_aud:[_aud];
+  D.all_rows.forEach(r=>{ if(_inR(r.date_str,_trFrom,_trTo)&&auds.includes(r.audience)) ms.add(r.ym); });
+  return [...ms].sort();
+}
 
 function _mtog(set, ids){
   ids.forEach((id,i)=>{const m=['open','click','conv','revenue'][i];
@@ -766,7 +781,7 @@ function _mtog(set, ids){
 function _toggleSet(set,m){ if(set.has(m)){ if(set.size>1) set.delete(m); } else set.add(m); }
 function _monMetricsBy(auds, key, val, months){
   return months.map(ym=>{
-    const g=D.all_rows.filter(r=>r.ym===ym && r[key]===val && auds.includes(r.audience));
+    const g=D.all_rows.filter(r=>r.ym===ym && r[key]===val && auds.includes(r.audience) && _inR(r.date_str,_trFrom,_trTo));
     if(!g.length) return {ym,open:null,click:null,conv:null,revenue:0};
     const rc=g.reduce((s,r)=>s+r.reach,0),op=g.reduce((s,r)=>s+r.opened,0),
           cl=g.reduce((s,r)=>s+r.clicks,0),od=g.reduce((s,r)=>s+r.orders,0),rv=g.reduce((s,r)=>s+r.revenue,0);
@@ -787,7 +802,7 @@ function renderTrend(){
   }
   _trMetrics=new Set(['open']); _trTopicMetrics=new Set(['open']); _trSTMetrics=new Set(['open']);
   _trTopic=''; _trST='';
-  const g = D.all_rows.filter(r => r.ym>=_trFrom && r.ym<=_trTo && selAuds.includes(r.audience));
+  const g = D.all_rows.filter(r => _inR(r.date_str,_trFrom,_trTo) && selAuds.includes(r.audience));
   const b=_wbase(g); _audAvgO=b.open; _audAvgC=b.click;
   _aud = selAuds;
   buildTrendHTML(selAuds);
@@ -796,21 +811,23 @@ function renderTrend(){
 function buildTrendHTML(audsArr){
   const auds = Array.isArray(audsArr) ? audsArr : [audsArr];
   const audLabel = auds.length === 1 ? auds[0] : `合併 ${auds.length} 個分眾`;
-  const rMonths = MONTHS.filter(ym => ym>=_trFrom && ym<=_trTo);
+
+  // 區間內（依日期）該分眾的所有推播
+  const sg = D.all_rows.filter(r => _inR(r.date_str,_trFrom,_trTo) && auds.includes(r.audience));
+  const rMonths = [...new Set(sg.map(r=>r.ym))].sort();
   const rML = rMonths.map(ym => MLabels[ym]);
   _trLabels = rML;
 
+  const byM={}; sg.forEach(r=>{(byM[r.ym]=byM[r.ym]||[]).push(r);});
   const mon = rMonths.map(ym => {
-    const rows = D.all_rows.filter(r => r.ym === ym && auds.includes(r.audience));
-    if (rows.length === 0) return {ym, open: null, click: null, conv: null, orders: 0, revenue: 0};
+    const rows = byM[ym]||[];
     const rch=rows.reduce((s,r)=>s+r.reach,0), opd=rows.reduce((s,r)=>s+r.opened,0),
           clk=rows.reduce((s,r)=>s+r.clicks,0), odr=rows.reduce((s,r)=>s+r.orders,0), rv=rows.reduce((s,r)=>s+r.revenue,0);
     return {ym, open: rch?+(opd/rch*100).toFixed(2):null, click: opd?+(clk/opd*100).toFixed(2):null,
             conv: clk?+(odr/clk*100).toFixed(2):0, orders: odr, revenue: rv};
   });
-  const cnt = rMonths.map(ym => ({ym, count: D.all_rows.filter(r => r.ym === ym && auds.includes(r.audience)).length}));
+  const cnt = rMonths.map(ym => ({ym, count: (byM[ym]||[]).length}));
 
-  const sg = D.all_rows.filter(r => r.ym>=_trFrom && r.ym<=_trTo && auds.includes(r.audience));
   const sumReach=sg.reduce((s,r)=>s+r.reach,0), sumOpened=sg.reduce((s,r)=>s+r.opened,0),
         sumClicks=sg.reduce((s,r)=>s+r.clicks,0), sumOrders=sg.reduce((s,r)=>s+r.orders,0),
         sumRev=sg.reduce((s,r)=>s+r.revenue,0), sumN=sg.length;
@@ -841,7 +858,7 @@ function buildTrendHTML(audsArr){
       <div class="card rev"><div class="lbl">累積營業額</div><div class="val">${fmtM(sm.revenue||0)}</div>
         <div class="sub">訂單 ${fmt(sm.orders||0)}　客單 ${fmt(sm.aov||0)}</div></div>
       <div class="card"><div class="lbl">推播總筆數</div><div class="val">${sm.n}</div>
-        <div class="sub">期間 ${MLabels[_trFrom]}–${MLabels[_trTo]}　分眾 ${auds.length}</div></div>
+        <div class="sub">期間 ${_fmtDate(_trFrom)}–${_fmtDate(_trTo)}　分眾 ${auds.length}</div></div>
     </div>
     <div class="box"><div class="box-title">每月發送篇數</div>
       <div style="position:relative;width:100%;height:180px"><canvas id="cCnt"></canvas></div></div>
@@ -901,7 +918,7 @@ function drawTopicLine(){
   if(!_trTopic)return;
   const auds = Array.isArray(_aud) ? _aud : [_aud];
   const rMonths = trRMonths(); const rML = rMonths.map(ym=>MLabels[ym]);
-  const allG = D.all_rows.filter(r => r.topic === _trTopic && auds.includes(r.audience) && r.ym>=_trFrom && r.ym<=_trTo);
+  const allG = D.all_rows.filter(r => r.topic === _trTopic && auds.includes(r.audience) && _inR(r.date_str,_trFrom,_trTo));
   const b=_wbase(allG);
   const badge=document.getElementById('trTopicAvgBadge');
   if(badge) badge.textContent=`基準 開封 ${b.open}% / 點擊 ${b.click}%`;
@@ -911,7 +928,7 @@ function drawSTLine(){
   if(!_trST)return;
   const auds = Array.isArray(_aud) ? _aud : [_aud];
   const rMonths = trRMonths(); const rML = rMonths.map(ym=>MLabels[ym]);
-  const allG = D.all_rows.filter(r => r.send_type === _trST && auds.includes(r.audience) && r.ym>=_trFrom && r.ym<=_trTo);
+  const allG = D.all_rows.filter(r => r.send_type === _trST && auds.includes(r.audience) && _inR(r.date_str,_trFrom,_trTo));
   const b=_wbase(allG);
   const badge=document.getElementById('trSTAvgBadge');
   if(badge) badge.textContent=`基準 開封 ${b.open}% / 點擊 ${b.click}%`;
@@ -954,7 +971,7 @@ function _esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 
 function toggleST(st){ if(_selSTs.has(st))_selSTs.delete(st); else _selSTs.add(st); _pg=1;drawDetail(); }
 function selectAllSTs(){
-  const raw=[]; [..._dtAuds].forEach(a=>(D.aud_detail[a]||[]).forEach(r=>{if(r.ym>=_dtFrom&&r.ym<=_dtTo)raw.push(r);}));
+  const raw=[]; [..._dtAuds].forEach(a=>(D.aud_detail[a]||[]).forEach(r=>{if(_inR(r.date_str,_dtFrom,_dtTo))raw.push(r);}));
   _selSTs=new Set(raw.map(r=>r.send_type).filter(Boolean)); _pg=1; drawDetail();
 }
 
@@ -967,7 +984,7 @@ function drawDetail(){
   let raw = [];
   selAuds.forEach(aud => {
     (D.aud_detail[aud]||[]).forEach(r => {
-      if (r.ym>=_dtFrom && r.ym<=_dtTo) raw.push({...r, _audience: aud});
+      if (_inR(r.date_str,_dtFrom,_dtTo)) raw.push({...r, _audience: aud});
     });
   });
 
@@ -1028,7 +1045,7 @@ function drawDetail(){
       <div class="card rev"><div class="lbl">累積營業額</div><div class="val">${fmtM(sm.revenue)}</div>
         <div class="sub">客單均 ${fmt(sm.aov)}</div></div>
       <div class="card"><div class="lbl">推播篇數</div><div class="val">${sm.n}</div>
-        <div class="sub">期間 ${MLabels[_dtFrom]}–${MLabels[_dtTo]}</div></div>
+        <div class="sub">期間 ${_fmtDate(_dtFrom)}–${_fmtDate(_dtTo)}</div></div>
     </div>
 
     <div class="box">
@@ -1146,7 +1163,7 @@ function clearAllAuds(mode){
 function renderProd(){ _pgP=1;_qP='';_selProds=new Set(); drawProd(); }
 function toggleProd(p){ if(_selProds.has(p))_selProds.delete(p); else _selProds.add(p); _pgP=1; drawProd(); }
 function selectAllProds(){
-  const raw=[]; [..._pdAuds].forEach(a=>(D.aud_detail[a]||[]).forEach(r=>{if(r.ym>=_pdFrom&&r.ym<=_pdTo)raw.push(r);}));
+  const raw=[]; [..._pdAuds].forEach(a=>(D.aud_detail[a]||[]).forEach(r=>{if(_inR(r.date_str,_pdFrom,_pdTo))raw.push(r);}));
   const ps=new Set(); raw.forEach(r=>(r.products||[]).forEach(p=>ps.add(p))); _selProds=ps; _pgP=1; drawProd();
 }
 
@@ -1159,7 +1176,7 @@ function drawProd(){
   let raw = [];
   selAuds.forEach(aud => {
     (D.aud_detail[aud]||[]).forEach(r => {
-      if (r.ym>=_pdFrom && r.ym<=_pdTo) raw.push({...r, _audience: aud});
+      if (_inR(r.date_str,_pdFrom,_pdTo)) raw.push({...r, _audience: aud});
     });
   });
   const sm = {..._wsumRows(raw), audience: selAuds.length===1?selAuds[0]:`合併 ${selAuds.length} 個分眾`};
@@ -1220,7 +1237,7 @@ function drawProd(){
       <div class="card rev"><div class="lbl">累積營業額</div><div class="val">${fmtM(sm.revenue)}</div>
         <div class="sub">客單均 ${fmt(sm.aov)}</div></div>
       <div class="card"><div class="lbl">推播篇數</div><div class="val">${sm.n}</div>
-        <div class="sub">期間 ${MLabels[_pdFrom]}–${MLabels[_pdTo]}　含產品 ${sm.n-noProd}</div></div>
+        <div class="sub">期間 ${_fmtDate(_pdFrom)}–${_fmtDate(_pdTo)}　含產品 ${sm.n-noProd}</div></div>
     </div>
 
     <div class="box">
