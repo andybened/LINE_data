@@ -57,6 +57,9 @@ table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 th{text-align:left;padding:8px 10px;border-bottom:2px solid #e0e0dd;color:#888;font-weight:500;white-space:nowrap;background:#fafaf8;font-size:11px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer}
 th:hover{color:#1a1a18}
 td{padding:7px 10px;border-bottom:1px solid #f0f0ee;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+th{position:relative}
+.col-rz{position:absolute;top:0;right:-4px;width:9px;height:100%;cursor:col-resize;z-index:6;user-select:none}
+.col-rz:hover{background:rgba(91,33,182,.3)}
 tr:hover td{background:#fafaf8}
 td.tdw{white-space:normal;line-height:1.35}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
@@ -774,6 +777,28 @@ function trRMonths(){
   return [...ms].sort();
 }
 
+/* ── 表格欄寬可拖曳調整 ── */
+let _colW = {};   // { key: { colIndex: px } }
+function enableColResize(tableId, key){
+  const tb=document.getElementById(tableId); if(!tb) return;
+  const ths=[...tb.querySelectorAll('thead th')];
+  _colW[key]=_colW[key]||{};
+  ths.forEach((th,i)=>{
+    if(_colW[key][i]) th.style.width=_colW[key][i]+'px';
+    th.style.position='relative';
+    const h=document.createElement('div'); h.className='col-rz'; h.title='拖曳調整欄寬';
+    h.onmousedown=(e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const startX=e.pageX, startW=th.offsetWidth;
+      const mv=(ev)=>{ const w=Math.max(36,startW+(ev.pageX-startX)); th.style.width=w+'px'; _colW[key][i]=w; };
+      const up=()=>{ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); document.body.style.userSelect=''; };
+      document.body.style.userSelect='none';
+      document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
+    };
+    th.appendChild(h);
+  });
+}
+
 function _mtog(set, ids){
   ids.forEach((id,i)=>{const m=['open','click','conv','revenue'][i];
     const b=document.getElementById(id); if(b) b.classList.toggle('on',set.has(m));});
@@ -1081,15 +1106,15 @@ function drawDetail(){
           <option value="date_asc"   ${_sort==='date_asc'?'selected':''}>日期 ↑</option>
         </select>
       </div>
-      <div class="tbl-wrap"><table>
+      <div class="tbl-wrap"><table id="dtTbl">
         <thead><tr>
           <th style="width:26px">#</th><th style="width:76px">日期</th>
           <th style="width:78px">發送類型</th><th>發送主題</th>
-          <th style="width:90px">分眾</th>
-          <th style="width:100px">溝通品項</th><th style="width:50px">受眾</th>
+          <th style="width:96px">分眾</th>
+          <th style="width:100px">溝通品項</th><th style="width:64px">受眾</th>
           <th style="width:112px">開封率</th><th style="width:104px">開啟點擊率</th>
           <th style="width:65px">轉換率</th><th style="width:55px">訂單</th>
-          <th style="width:76px">營業額</th>
+          <th style="width:90px">營業額</th>
         </tr></thead>
         <tbody>
         ${slice.map((r,i) => {
@@ -1130,6 +1155,7 @@ function drawDetail(){
       <div class="pager">${pg}</div>
       <p class="note" style="margin-top:8px">❗ = 低於發送類型加權基準　｜　<span class="st-badge">均 XX%</span> = 基準值</p>
     </div>`;
+  enableColResize('dtTbl','dt');
 }
 
 function _audSet(mode){ return mode==='tr'?_trAuds : mode==='dt'?_dtAuds : _pdAuds; }
@@ -1274,15 +1300,15 @@ function drawProd(){
           <option value="date_asc"   ${_sortP==='date_asc'?'selected':''}>日期 ↑</option>
         </select>
       </div>
-      <div class="tbl-wrap"><table>
+      <div class="tbl-wrap"><table id="pdTbl">
         <thead><tr>
           <th style="width:26px">#</th><th style="width:76px">日期</th>
           <th style="width:78px">發送類型</th><th>發送主題</th>
-          <th style="width:90px">分眾</th>
-          <th style="width:150px">產品選項</th><th style="width:50px">受眾</th>
+          <th style="width:96px">分眾</th>
+          <th style="width:150px">產品選項</th><th style="width:64px">受眾</th>
           <th style="width:112px">開封率</th><th style="width:104px">開啟點擊率</th>
           <th style="width:65px">轉換率</th><th style="width:55px">訂單</th>
-          <th style="width:76px">營業額</th>
+          <th style="width:90px">營業額</th>
         </tr></thead>
         <tbody>
         ${slice.map((r,i) => {
@@ -1325,6 +1351,7 @@ function drawProd(){
       <div class="pager">${pg}</div>
       <p class="note" style="margin-top:8px">❗ = 低於目前基準（${baseLabel}）　｜　<span class="st-badge">均 XX%</span> = 基準值，隨產品多選變動　｜　紫色標籤 = 已選產品</p>
     </div>`;
+  enableColResize('pdTbl','pd');
 }
 
 
