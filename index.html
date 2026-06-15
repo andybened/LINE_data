@@ -537,7 +537,7 @@ function diagArtSort(sk,ym){
   else arts.sort((a,b)=>b.open_rate-a.open_rate);
   const maxO=Math.max(...arts.map(r=>r.open_rate))||1;
   const maxC=Math.max(...arts.map(r=>r.click_rate??0))||1;
-  document.getElementById('artTbl').innerHTML=`<table>
+  document.getElementById('artTbl').innerHTML=`<table id="diagTbl">
     <thead><tr>
       <th style="width:26px">#</th><th style="width:76px">日期</th>
       <th style="width:80px">發送類型</th><th>發送主題</th>
@@ -570,6 +570,7 @@ function diagArtSort(sk,ym){
         <td style="font-size:12px;color:${r.revenue?'#5b21b6':'#bbb'}">${r.revenue?fmtM(r.revenue):'—'}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
+  enableColResize('diagTbl','diag');
 }
 
 /* ══ PILLS ══ */
