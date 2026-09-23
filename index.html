@@ -783,13 +783,13 @@ function drawProd(){
             <td><div style="display:flex;align-items:center;gap:3px"><div class="barg" style="width:32px"><div class="barf" style="width:${ow}%;background:${bO?C_WARN:C_OPEN}"></div></div>
               <span style="font-weight:600;min-width:30px;font-size:12px;color:${bO?C_WARN:'#1a1a18'}">${(r.open_rate||0).toFixed(1)}%</span>${bO?`<span style="color:${C_WARN};font-size:10px">❗</span>`:''}</div>
               <div class="st-badge">均 ${base.open}%</div></td>
-            <td><div style="display:flex;align-items:center;gap:3px"><span style="font-weight:600;font-size:12px;color:${r.click_rate!=null?(base.click!=null&&r.click_rate<base.click?C_WARN:'#1a1a18'):'#bbb'}">${r.click_rate!=null?r.click_rate.toFixed(1)+'%':'—'}</span>${base.click!=null&&r.click_rate!=null&&r.click_rate<base.click?`<span style="color:${C_WARN};font-size:10px">❗</span>`:''}</div>${base.click!=null?`<div class="st-badge">均 ${base.click}%</div>`:''}</td>
-            <td><div style="display:flex;align-items:center;gap:3px"><span style="font-weight:600;font-size:12px;color:${r.conv_rate?(base.conv!=null&&r.conv_rate<base.conv?C_WARN:'#a07010'):'#bbb'}">${r.conv_rate!=null?r.conv_rate.toFixed(2)+'%':'—'}</span>${base.conv!=null&&r.conv_rate!=null&&r.conv_rate<base.conv?`<span style="color:${C_WARN};font-size:10px">❗</span>`:''}</div>${base.conv!=null?`<div class="st-badge">均 ${base.conv}%</div>`:''}</td>
+            <td style="font-size:12px">${r.click_rate!=null?r.click_rate.toFixed(1)+'%':'—'}</td>
+            <td style="font-size:12px;color:${r.conv_rate?'#a07010':'#bbb'}">${r.conv_rate!=null?r.conv_rate.toFixed(2)+'%':'—'}</td>
             <td style="font-size:12px;font-weight:${r.orders?600:400};color:${r.orders?'#1a1a18':'#bbb'}">${r.orders||'—'}</td>
             <td style="font-size:12px;color:${r.revenue?'#5b21b6':'#bbb'}">${r.revenue?fmtM(r.revenue):'—'}</td></tr>`;}).join('')}
         </tbody></table></div>
       <div class="pager">${pg}</div>
-      <p class="note" style="margin-top:8px">❗ = 低於目前基準（${baseLabel}：開封 ${base.open}% / 開啟點擊 ${base.click}% / 轉換 ${base.conv}%）　｜　紫色標籤 = 已選產品　｜ 一篇含多產品時各產品分別計入基準</p>
+      <p class="note" style="margin-top:8px">❗ = 低於目前基準（${baseLabel} 開封 ${base.open}%）　｜　紫色標籤 = 已選產品　｜ 一篇含多產品時各產品分別計入基準</p>
     </div>`;
   enableColResize('pdTbl','pd');
 }
@@ -1264,7 +1264,7 @@ function drawDetail(){
               ${bC?`<span style="color:${C_WARN};font-size:10px">❗</span>`:''}
             </div>
             ${stAvgC!=null?`<div class="st-badge">均 ${stAvgC}%</div>`:''}</td>
-            <td style="font-size:12px;color:${r.conv_rate?'#a07010':'#bbb'}">${r.conv_rate!=null?r.conv_rate.toFixed(2)+'%':'—'}</td>
+            <td>${(()=>{const stAvgV=_selSTs.size>0?selConv_st:r.st_avg_conv;const bV=stAvgV!=null&&r.conv_rate!=null&&r.conv_rate<stAvgV;return `<div style="display:flex;align-items:center;gap:3px"><span style="font-weight:600;font-size:12px;color:${r.conv_rate?(bV?C_WARN:'#a07010'):'#bbb'}">${r.conv_rate!=null?r.conv_rate.toFixed(2)+'%':'—'}</span>${bV?`<span style="color:${C_WARN};font-size:10px">❗</span>`:''}</div>${stAvgV!=null?`<div class="st-badge">均 ${stAvgV}%</div>`:''}`;})()}</td>
             <td style="font-size:12px;font-weight:${r.orders?600:400};color:${r.orders?'#1a1a18':'#bbb'}">${r.orders||'—'}</td>
             <td style="font-size:12px;color:${r.revenue?'#5b21b6':'#bbb'}">${r.revenue?fmtM(r.revenue):'—'}</td>
           </tr>`;
