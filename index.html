@@ -218,7 +218,7 @@ td.tdw{white-space:normal;line-height:1.35}
       <input id="sjQ" placeholder="搜尋發送主題…" oninput="_sjQ=this.value.toLowerCase();renderSubjectList()">
       <select id="sjSel" onchange="_sjSel=this.value;drawSubject()"><option value="">— 請選擇發送主題 —</option></select>
     </div>
-    <p class="note">主題以命名自動正規化（去日期前綴／客群後綴）分組；下拉依「篇數／客群數」排序，跨多客群者在前。括號內為（篇數／涵蓋客群數）。</p>
+    <p class="note">分組規則：以發送主題第一個「-」為界，「-」之前為主題（同主題合併各客群）、「-」之後為客群。下拉依「篇數／客群數」排序，跨多客群者在前；括號內為（篇數／涵蓋客群數）。</p>
   </div>
   <div id="sjContent"><div class="empty">👆 選擇一個發送主題，查看所有客群加總後的成效</div></div>
 </div>
@@ -941,14 +941,9 @@ function _audKeywords(){
   return [...set].filter(Boolean).sort((a,b)=>b.length-a.length);
 }
 function _normSubj(subj){
-  if(_AKW===null)_AKW=_audKeywords();
-  let s=(subj||'').replace(/^\d{6,8}[_\-]?\d{0,4}[_\-]?/,'');
-  for(const kw of _AKW){
-    if(!kw)continue;
-    if(s.endsWith('-'+kw)||s.endsWith('_'+kw)){s=s.slice(0,s.length-kw.length).replace(/[-_\s]+$/,'');break;}
-    if(s.endsWith(kw)&&s.length>kw.length+1){s=s.slice(0,s.length-kw.length).replace(/[-_\s]+$/,'');break;}
-  }
-  return s.trim()||subj;
+  const s=(subj||'');
+  const p=s.indexOf('-');
+  return (p>=0 ? s.slice(0,p) : s).trim() || subj;
 }
 function _buildThemes(){
   const m={};
