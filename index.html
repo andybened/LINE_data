@@ -220,6 +220,18 @@ td.tdw{white-space:normal;line-height:1.35}
     </div>
     <p class="note">分組規則：以發送主題第一個「-」為界，「-」之前為主題（同主題合併各客群）、「-」之後為客群。下拉依「篇數／客群數」排序，跨多客群者在前；括號內為（篇數／涵蓋客群數）。</p>
   </div>
+  <div class="box" style="margin-bottom:14px">
+    <div class="box-title">發送主題排行 <span style="font-size:11px;color:#999;font-weight:400">— 依指標排序所有主題，點一列可看詳情</span></div>
+    <div class="chart-ctrl">
+      <div class="mtoggle">
+        <button id="sjRB1" class="on" onclick="sjRankBy('open')">開封率</button>
+        <button id="sjRB2" onclick="sjRankBy('click')">開啟點擊率</button>
+        <button id="sjRB3" onclick="sjRankBy('conv')">轉換率</button>
+      </div>
+      <input id="sjRankQ" placeholder="搜尋主題…" oninput="_sjRankQ=this.value.toLowerCase();renderSubjectRank()" style="margin-left:8px">
+    </div>
+    <div id="sjRank"></div>
+  </div>
   <div id="sjContent"><div class="empty">👆 選擇一個發送主題，查看所有客群加總後的成效</div></div>
 </div>
 
@@ -692,11 +704,12 @@ function clearAllAuds(mode){
   mode==='tr'?renderTrend():mode==='dt'?renderDetail():renderProd();
 }
 
-let _sjSel='', _sjQ='', _sjThemes=null, _AKW=null;
+let _sjSel='', _sjQ='', _sjThemes=null, _AKW=null, _sjRankBy='open', _sjRankQ='';
 makePills('trPills', 'tr');
 makePills('dtPills', 'dt');
 makePills('pdPills', 'pd');
 renderSubjectList();
+renderSubjectRank();
 
 /* ══ TREND ══ */
 let _aud='',_trML='open',_trTopic='',_trTopicM='open',_trST='',_trSTM='open';
@@ -948,7 +961,10 @@ function _normSubj(subj){
 function _buildThemes(){
   const m={};
   D.all_rows.forEach(r=>{const k=_normSubj(r.subject); (m[k]=m[k]||{rows:[],auds:new Set()}); m[k].rows.push(r); if(r.audience&&r.audience!=='nan')m[k].auds.add(r.audience);});
-  _sjThemes=Object.entries(m).map(([k,v])=>({key:k,n:v.rows.length,na:v.auds.size})).sort((a,b)=>b.n-a.n||b.na-a.na);
+  _sjThemes=Object.entries(m).map(([k,v])=>{
+    const g=v.rows,rc=g.reduce((s,r)=>s+r.reach,0),op=g.reduce((s,r)=>s+r.opened,0),cl=g.reduce((s,r)=>s+r.clicks,0),od=g.reduce((s,r)=>s+r.orders,0),rv=g.reduce((s,r)=>s+r.revenue,0);
+    return {key:k,n:g.length,na:v.auds.size,open:rc?+(op/rc*100).toFixed(2):0,click:op?+(cl/op*100).toFixed(2):0,conv:cl?+(od/cl*100).toFixed(2):0,reach:rc,orders:od,revenue:rv};
+  }).sort((a,b)=>b.n-a.n||b.na-a.na);
 }
 function renderSubjectList(){
   if(!_sjThemes)_buildThemes();
@@ -956,6 +972,32 @@ function renderSubjectList(){
   const q=_sjQ;
   const list=_sjThemes.filter(t=>!q||t.key.toLowerCase().includes(q)).slice(0,300);
   sel.innerHTML='<option value="">— 請選擇發送主題 —</option>'+list.map(t=>`<option value="${t.key.replace(/"/g,'&quot;')}" ${t.key===_sjSel?'selected':''}>${t.key}（${t.n}篇/${t.na}客群）</option>`).join('');
+}
+function sjRankBy(m){_sjRankBy=m;renderSubjectRank();}
+function renderSubjectRank(){
+  if(!_sjThemes)_buildThemes();
+  const el=document.getElementById('sjRank'); if(!el)return;
+  const metric=_sjRankBy;
+  ['sjRB1','sjRB2','sjRB3'].forEach((id,i)=>{const b=document.getElementById(id);if(b)b.classList.toggle('on',['open','click','conv'][i]===metric);});
+  const q=_sjRankQ||'';
+  const list=_sjThemes.filter(t=>!q||t.key.toLowerCase().includes(q)).slice().sort((a,b)=>b[metric]-a[metric]);
+  const col={open:'#2b6cb0',click:'#276749',conv:'#a07010'};
+  const rows=list.map((t,i)=>{const sel=t.key.replace(/'/g,"\\'");
+    return `<tr style="cursor:pointer" title="點此查看此主題詳情" onclick="_sjSel='${sel}';var s=document.getElementById('sjSel');if(s)s.value=_sjSel;drawSubject();document.getElementById('sjContent').scrollIntoView({behavior:'smooth'})">
+      <td style="color:#bbb;font-size:11px">${i+1}</td>
+      <td style="font-size:12px;font-weight:600">${t.key}</td>
+      <td style="font-size:11px;color:#888">${t.n}</td>
+      <td style="font-size:11px;color:#888">${t.na}</td>
+      <td style="font-size:12px;font-weight:${metric==='open'?700:400};color:${metric==='open'?col.open:'#666'}">${t.open}%</td>
+      <td style="font-size:12px;font-weight:${metric==='click'?700:400};color:${metric==='click'?col.click:'#666'}">${t.click}%</td>
+      <td style="font-size:12px;font-weight:${metric==='conv'?700:400};color:${metric==='conv'?col.conv:'#666'}">${t.conv}%</td>
+      <td style="font-size:11px;color:#5b21b6">${fmtM(t.revenue)}</td></tr>`;}).join('');
+  el.innerHTML=`<p class="note" style="margin-top:0">共 ${list.length} 個主題，依「${{open:'開封率',click:'開啟點擊率',conv:'轉換率'}[metric]}」由高到低；點任一列可看該主題各客群詳情。篇數少的主題比率易波動，請參考篇數欄。</p>
+    <div class="tbl-wrap" style="max-height:460px;overflow-y:auto"><table id="sjRankTbl">
+    <thead><tr><th style="width:40px">#</th><th>發送主題</th><th style="width:50px">篇數</th><th style="width:50px">客群</th>
+      <th style="width:80px">開封率</th><th style="width:100px">開啟點擊率</th><th style="width:72px">轉換率</th><th style="width:90px">營業額</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+  enableColResize('sjRankTbl','sjR');
 }
 function drawSubject(){
   const c=document.getElementById('sjContent');
